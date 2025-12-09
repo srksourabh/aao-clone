@@ -4,6 +4,7 @@ import { BookingFormData } from "@/types/booking";
 import { supabase } from "@/lib/supabase";
 import { env } from "@/env.mjs";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface BookingRecord extends BookingFormData {
   id: string;
   status: "pending" | "confirmed" | "cancelled";
