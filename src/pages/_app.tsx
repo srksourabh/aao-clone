@@ -3,6 +3,8 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ErrorBoundary } from "react-error-boundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OfflineBanner } from "@/hooks/useNetworkStatus";
+import { logError } from "@/lib/errors";
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   return (
@@ -62,11 +64,13 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
 }
 
 function logErrorToService(error: Error, errorInfo: React.ErrorInfo) {
-  // Log to console in development
-  console.error("Error caught by boundary:", error, errorInfo);
-  
-  // In production, you could send to error tracking service:
-  // Sentry.captureException(error, { contexts: { react: errorInfo } });
+  // Use centralized error logging
+  logError(error, 'ErrorBoundary');
+
+  // Log component stack in development
+  if (process.env.NODE_ENV === 'development' && errorInfo.componentStack) {
+    console.error('Component Stack:', errorInfo.componentStack);
+  }
 }
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -80,6 +84,7 @@ export default function App({ Component, pageProps }: AppProps) {
       }}
     >
       <AuthProvider>
+        <OfflineBanner />
         <Component {...pageProps} />
         <Toaster />
       </AuthProvider>

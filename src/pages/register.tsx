@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, Lock, User, Phone, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { signUp, user, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -81,6 +83,10 @@ export default function RegisterPage() {
       setError(signUpError);
       setLoading(false);
     } else {
+      toast({
+        title: "Account Created!",
+        description: "Please check your email to verify your account.",
+      });
       setSuccess(true);
       setLoading(false);
     }

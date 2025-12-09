@@ -53,7 +53,8 @@ interface BookingFormProps {
 }
 
 // Named Export
-export function BookingForm(_props: BookingFormProps = {}) {
+export function BookingForm(_: BookingFormProps = {}) {
+  void _; // Props reserved for future use
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 

@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { signIn, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,6 +59,10 @@ export default function LoginPage() {
       setError(signInError);
       setLoading(false);
     } else {
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
       // Redirect to intended page or my-bookings
       const redirectTo = router.query.redirect as string || '/my-bookings';
       router.push(redirectTo);

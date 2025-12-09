@@ -32,6 +32,7 @@ import {
   Home,
   RefreshCw,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Booking {
   id: number;
@@ -64,6 +65,7 @@ const statusConfig: Record<string, { color: string; icon: React.ReactNode; label
 
 export default function MyBookingsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { user, loading: authLoading, signOut } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,8 +126,17 @@ export default function MyBookingsPage() {
       ));
       setShowCancelDialog(false);
       setSelectedBooking(null);
+      toast({
+        title: "Booking Cancelled",
+        description: "Your booking has been successfully cancelled.",
+      });
     } catch (err) {
       setError('Failed to cancel booking. Please try again.');
+      toast({
+        title: "Cancellation Failed",
+        description: "Unable to cancel booking. Please try again.",
+        variant: "destructive",
+      });
       console.error('Error cancelling booking:', err);
     } finally {
       setCancellingId(null);
