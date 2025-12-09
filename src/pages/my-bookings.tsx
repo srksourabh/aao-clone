@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Home,
   RefreshCw,
+  CreditCard,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -53,6 +54,7 @@ interface Booking {
   baby_on_board: boolean;
   patient_on_board: boolean;
   pet_on_board: boolean;
+  payment_status?: string;
 }
 
 const statusConfig: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
@@ -281,11 +283,27 @@ export default function MyBookingsPage() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         {/* Booking Info */}
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <Badge className={`${status.color} flex items-center gap-1`}>
                               {status.icon}
                               {status.label}
                             </Badge>
+                            {booking.payment_status === 'paid' ? (
+                              <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+                                <CreditCard className="h-3 w-3" />
+                                Paid
+                              </Badge>
+                            ) : booking.payment_status === 'refunded' ? (
+                              <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
+                                <CreditCard className="h-3 w-3" />
+                                Refunded
+                              </Badge>
+                            ) : booking.status !== 'cancelled' && booking.total_amount > 0 ? (
+                              <Badge className="bg-orange-100 text-orange-800 flex items-center gap-1">
+                                <CreditCard className="h-3 w-3" />
+                                Unpaid
+                              </Badge>
+                            ) : null}
                             <span className="text-xs text-gray-500">
                               #{booking.id}
                             </span>
@@ -355,7 +373,17 @@ export default function MyBookingsPage() {
                             </div>
                           )}
 
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
+                            {booking.status !== 'cancelled' &&
+                             booking.payment_status !== 'paid' &&
+                             booking.total_amount > 0 && (
+                              <Link href={`/payment/${booking.id}`}>
+                                <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                                  <CreditCard className="h-4 w-4 mr-1" />
+                                  Pay
+                                </Button>
+                              </Link>
+                            )}
                             <Link href={`/booking/${booking.id}`}>
                               <Button variant="outline" size="sm">
                                 Details

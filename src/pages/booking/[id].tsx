@@ -35,6 +35,7 @@ import {
   IndianRupee,
   Route,
   FileText,
+  CreditCard,
 } from 'lucide-react';
 
 interface Booking {
@@ -62,6 +63,9 @@ interface Booking {
   waiting_time: string | null;
   price_metadata: Record<string, unknown> | null;
   admin_notes: string | null;
+  payment_status?: string;
+  payment_id?: string;
+  payment_date?: string;
 }
 
 const statusConfig: Record<string, { color: string; bgColor: string; icon: React.ReactNode; label: string }> = {
@@ -465,6 +469,68 @@ export default function BookingDetailsPage() {
                     </div>
                   ) : (
                     <p className="text-center text-gray-500">Price will be confirmed</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Payment Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-purple-600" />
+                    Payment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {booking.payment_status === 'paid' ? (
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <p className="font-semibold text-green-700">Payment Complete</p>
+                      {booking.payment_date && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Paid on {formatDateTime(booking.payment_date)}
+                        </p>
+                      )}
+                      {booking.payment_id && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          ID: {booking.payment_id.slice(0, 16)}...
+                        </p>
+                      )}
+                    </div>
+                  ) : booking.payment_status === 'refunded' ? (
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <IndianRupee className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <p className="font-semibold text-blue-700">Refunded</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Amount has been refunded
+                      </p>
+                    </div>
+                  ) : booking.status === 'cancelled' ? (
+                    <div className="text-center">
+                      <p className="text-gray-500">Booking cancelled</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Clock className="h-6 w-6 text-yellow-600" />
+                      </div>
+                      <p className="font-semibold text-yellow-700">Payment Pending</p>
+                      <p className="text-xs text-gray-500 mt-2 mb-4">
+                        Complete your payment to confirm
+                      </p>
+                      {booking.total_amount > 0 && booking.status !== 'cancelled' && (
+                        <Link href={`/payment/${booking.id}`}>
+                          <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Pay ₹{Math.round(booking.total_amount)}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
