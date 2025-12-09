@@ -125,73 +125,122 @@ export function BookingForm() {
   };
 
   // --- PRICING LOGIC ---
-  const handleCalculatePrice = (e: any) => {
+  const handleCalculatePrice = async (e: any) => {
     e.preventDefault();
-    
+
     if(!formData.from_location || !formData.trip_date || !formData.name || !formData.phone) {
         alert("Please fill in Locations, Date, Name, and Phone number to get a quote.");
         return;
     }
     if ((tripType === 'oneway' || tripType === 'roundtrip') && !formData.to_location) {
-        alert("Please select a Drop/Visit location."); 
-        return; 
+        alert("Please select a Drop/Visit location.");
+        return;
     }
 
-    // Mock Calculation
-    let basePrice = tripType === 'rental' ? 1800 : 2500; 
-    if(tripType === 'roundtrip') basePrice = 4500;
-    
-    const gst = Math.round(basePrice * 0.05);
-    const total = basePrice + gst;
+    // ⏰ 4-HOUR ADVANCE BOOKING VALIDATION
+    const tripDateTime = new Date(`${formData.trip_date}T${formData.trip_time}`);
+    const now = new Date();
+    const hoursDiff = (tripDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    setCalculatedPrice({
-        base: basePrice,
-        gst: gst,
-        total: total,
-        distance: "Approx 140 km", 
-        duration: "3 hrs 20 mins"
-    });
+    if (hoursDiff < 4) {
+        alert("⚠️ Advance Booking Required\n\nWe require minimum 4 hours advance notice for all bookings.\n\nPlease select a date and time at least 4 hours from now.\n\nFor immediate bookings, please call us at +91 7890302302");
+        return;
+    }
 
-    setShowQuoteModal(true);
+    // Show loading state
+    setLoading(true);
+    setStatus(null);
+
+    try {
+        // Call real pricing API
+        const response = await fetch('/api/get-quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                from: formData.from_location,
+                to: formData.to_location,
+                carType: formData.car_type,
+                date: formData.trip_date,
+                time: formData.trip_time,
+                tripType: tripType,
+                babyOnBoard: formData.baby_on_board,
+                petOnBoard: formData.pet_on_board,
+                patientOnBoard: formData.patient_on_board,
+                // Can add weather detection here if you have a weather API
+                // weather: 'clear' // or dynamically fetch based on location
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.quote) {
+            setCalculatedPrice(data.quote);
+            setShowQuoteModal(true);
+        } else {
+            alert("Unable to calculate price. Please try again or call us.");
+        }
+    } catch (error) {
+        console.error('Pricing error:', error);
+        alert("Unable to calculate price. Please try again or call us at +91 7890302302");
+    } finally {
+        setLoading(false);
+    }
   };
 
   // --- FINAL DB SUBMISSION ---
   const handleFinalBooking = async (actionType: 'book' | 'call') => {
     setLoading(true);
     setStatus(null);
-    setShowQuoteModal(false); 
+    setShowQuoteModal(false);
 
-    const finalData = { ...formData };
-    finalData.trip_type = tripType; 
+    const finalData: any = {
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      from_location: formData.from_location,
+      to_location: formData.to_location,
+      trip_date: formData.trip_date,
+      return_date: formData.return_date,
+      trip_time: formData.trip_time,
+      passengers: formData.passengers,
+      car_type: formData.car_type,
+      baby_on_board: formData.baby_on_board,
+      patient_on_board: formData.patient_on_board,
+      pet_on_board: formData.pet_on_board,
+      admin_notes: formData.admin_notes,
+      trip_type: tripType,
+    };
 
     // Defaults for Rental/Package
     if (tripType === 'rental') {
-      finalData.to_location = `RENTAL: ${formData.rental_package}`; 
+      finalData.to_location = `RENTAL: ${formData.rental_package}`;
       finalData.admin_notes = `Rental. ${formData.admin_notes}`;
     }
     if (tripType === 'package') {
        finalData.to_location = 'PACKAGE REQUEST';
-       finalData.passengers = 1;
-       finalData.car_type = 'Sedan';
        finalData.admin_notes = `Package Inquiry. ${formData.admin_notes}`;
     }
-    
-    finalData.admin_notes += ` | Quote: ₹${calculatedPrice?.total || 'N/A'} | Action: ${actionType.toUpperCase()}`;
+
+    if(tripType === 'roundtrip') {
+        finalData.admin_notes += ` | Waiting Time: ${formData.waiting_time} Hours`;
+    }
+
+    // Add pricing data to admin notes and database fields
+    if (calculatedPrice) {
+      finalData.distance_km = parseFloat(calculatedPrice.distanceKm || '0');
+      finalData.total_amount = calculatedPrice.finalTotal || 0;
+      finalData.price_metadata = JSON.stringify(calculatedPrice);
+      finalData.admin_notes += ` | Quote: ₹${calculatedPrice.finalTotal} | Distance: ${calculatedPrice.distanceKm}km | Action: ${actionType.toUpperCase()}`;
+    }
 
     const statusVal = actionType === 'book' ? 'pending_confirmation' : 'call_requested';
+    finalData.status = statusVal;
 
     try {
-      if(tripType === 'roundtrip') {
-          finalData.admin_notes += ` | Waiting Time: ${formData.waiting_time} Hours`;
-      }
-
-      const { error } = await supabase.from('bookings').insert([{
-        ...finalData,
-        status: statusVal
-      }]);
+      const { error } = await supabase.from('bookings').insert([finalData]);
 
       if (error) throw error;
-      
+
       setStatus('Success');
       setFormData({
         name: '', phone: '', email: '',
@@ -201,6 +250,7 @@ export function BookingForm() {
         admin_notes: '', car_type: 'Sedan', rental_package: '8 Hrs / 80 km', waiting_time: '0'
       });
       setNaturalLanguageInput('');
+      setCalculatedPrice(null);
     } catch (error: any) {
       console.error('Error:', error);
       setStatus('Error: ' + error.message);
@@ -449,46 +499,128 @@ export function BookingForm() {
 
       {/* ================= MODAL: SYNOPSIS & PRICE ================= */}
       {showQuoteModal && calculatedPrice && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-           <div style={{ backgroundColor: 'white', width: '90%', maxWidth: '500px', borderRadius: '16px', padding: '0', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, overflowY: 'auto' }}>
+           <div style={{ backgroundColor: 'white', width: '90%', maxWidth: '600px', borderRadius: '16px', padding: '0', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}>
               {/* Header */}
               <div style={{ backgroundColor: '#6d28d9', color: 'white', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <h3 style={{ margin: 0, fontSize: '18px' }}>Proposed Plan</h3>
+                 <h3 style={{ margin: 0, fontSize: '18px' }}>🎯 Your Smart Quote</h3>
                  <button onClick={() => setShowQuoteModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24}/></button>
               </div>
-              
-              <div style={{ padding: '25px' }}>
+
+              <div style={{ padding: '25px', maxHeight: '70vh', overflowY: 'auto' }}>
                  {/* Synopsis */}
                  <div style={{ marginBottom: '20px', color: '#374151', fontSize: '15px', lineHeight: '1.6' }}>
-                    <strong>Trip Synopsis:</strong><br/>
-                    You wish to travel from <strong>{formData.from_location}</strong> 
-                    {tripType !== 'rental' && <> to <strong>{formData.to_location}</strong></>} 
-                    {tripType === 'rental' && <> using the <strong>{formData.rental_package}</strong> package</>} 
-                    on <strong>{formData.trip_date}</strong> at {formData.trip_time}. 
+                    <strong>📋 Trip Synopsis:</strong><br/>
+                    You wish to travel from <strong>{formData.from_location}</strong>
+                    {tripType !== 'rental' && <> to <strong>{formData.to_location}</strong></>}
+                    {tripType === 'rental' && <> using the <strong>{formData.rental_package}</strong> package</>}
+                    on <strong>{formData.trip_date}</strong> at {formData.trip_time}.
                     {tripType !== 'rental' && <> Traveling with <strong>{formData.passengers} people</strong>.</>}
-                    {formData.pet_on_board && " (Pets Included)"}
+                    {formData.pet_on_board && " (🐕 Pets Included)"}
                  </div>
 
+                 {/* Competitive Advantage Banner */}
+                 {calculatedPrice.savings > 0 && (
+                   <div style={{ backgroundColor: '#dcfce7', border: '2px solid #16a34a', borderRadius: '8px', padding: '15px', marginBottom: '20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d', marginBottom: '5px' }}>
+                        💰 You Save ₹{calculatedPrice.savings}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#166534' }}>
+                        {calculatedPrice.savingsPercent}% cheaper than market average!
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Competitor Price Comparison */}
+                 {calculatedPrice.competitorPrices && (
+                   <div style={{ backgroundColor: '#fef3c7', border: '1px solid #fbbf24', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '14px', color: '#92400e' }}>📊 Market Comparison:</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '13px' }}>
+                        <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '6px' }}>
+                          <div style={{ fontWeight: '600', color: '#6b7280' }}>Ola</div>
+                          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>₹{calculatedPrice.competitorPrices.ola}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '6px' }}>
+                          <div style={{ fontWeight: '600', color: '#6b7280' }}>Uber</div>
+                          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>₹{calculatedPrice.competitorPrices.uber}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '6px' }}>
+                          <div style={{ fontWeight: '600', color: '#6b7280' }}>Rapido</div>
+                          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>₹{calculatedPrice.competitorPrices.rapido}</div>
+                        </div>
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Special Conditions */}
+                 {(calculatedPrice.isNight || calculatedPrice.isFestival || calculatedPrice.weatherCondition) && (
+                   <div style={{ backgroundColor: '#e0e7ff', border: '1px solid #818cf8', borderRadius: '8px', padding: '12px', marginBottom: '15px', fontSize: '13px' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#3730a3' }}>ℹ️ Pricing Factors:</div>
+                      {calculatedPrice.isNight && <div>🌙 Night travel (15% adjustment)</div>}
+                      {calculatedPrice.isFestival && <div>🎉 Festival season: {calculatedPrice.festivalName} (20% adjustment)</div>}
+                      {calculatedPrice.weatherCondition && <div>🌦️ Weather: {calculatedPrice.weatherCondition}</div>}
+                   </div>
+                 )}
+
                  {/* Price Breakup */}
-                 <div style={{ backgroundColor: '#f9fafb', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                 <div style={{ backgroundColor: '#f9fafb', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '15px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>💵 Price Breakdown:</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                        <span>Base Fare ({calculatedPrice.distance})</span>
-                        <span>₹{calculatedPrice.base}</span>
+                        <span>Base Fare ({calculatedPrice.distanceKm} km × ₹{calculatedPrice.ratePerKm}/km)</span>
+                        <span>₹{calculatedPrice.baseFare}</span>
                     </div>
+                    {calculatedPrice.driverAllowance > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                          <span>Driver Allowance (Night)</span>
+                          <span>₹{calculatedPrice.driverAllowance}</span>
+                      </div>
+                    )}
+                    {calculatedPrice.petCharge > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                          <span>Pet Charge 🐕</span>
+                          <span>₹{calculatedPrice.petCharge}</span>
+                      </div>
+                    )}
+                    {calculatedPrice.weatherSurcharge > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                          <span>Weather Surcharge</span>
+                          <span>₹{calculatedPrice.weatherSurcharge}</span>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: '#6b7280' }}>
                         <span>GST (5%)</span>
                         <span>₹{calculatedPrice.gst}</span>
                     </div>
-                    <div style={{ borderTop: '2px dashed #d1d5db', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '18px', color: '#4c1d95' }}>
-                        <span>Total Estimate</span>
-                        <span>₹{calculatedPrice.total}</span>
+                    <div style={{ borderTop: '2px dashed #d1d5db', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '20px', color: '#6d28d9' }}>
+                        <span>Your Price</span>
+                        <span>₹{calculatedPrice.finalTotal}</span>
                     </div>
                  </div>
 
+                 {/* Perks */}
+                 {calculatedPrice.perks && calculatedPrice.perks.length > 0 && (
+                   <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '12px', marginBottom: '15px' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px', color: '#166534' }}>🎁 Included Perks:</div>
+                      {calculatedPrice.perks.map((perk: string, idx: number) => (
+                        <div key={idx} style={{ fontSize: '13px', color: '#15803d', marginBottom: '4px' }}>✓ {perk}</div>
+                      ))}
+                   </div>
+                 )}
+
                  {/* Action Buttons */}
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '25px' }}>
-                    <button onClick={() => handleFinalBooking('call')} style={{ padding: '12px', border: '1px solid #6d28d9', backgroundColor: 'white', color: '#6d28d9', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Call Me</button>
-                    <button onClick={() => handleFinalBooking('book')} style={{ padding: '12px', border: 'none', backgroundColor: '#6d28d9', color: 'white', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Accept & Book</button>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => handleFinalBooking('call')}
+                      disabled={loading}
+                      style={{ padding: '14px', border: '2px solid #6d28d9', backgroundColor: 'white', color: '#6d28d9', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
+                      📞 Call Me I Need Clarification
+                    </button>
+                    <button
+                      onClick={() => handleFinalBooking('book')}
+                      disabled={loading}
+                      style={{ padding: '14px', border: 'none', backgroundColor: '#6d28d9', color: 'white', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', boxShadow: '0 4px 6px rgba(109, 40, 217, 0.3)' }}>
+                      ✓ Yes Accept and Book
+                    </button>
                  </div>
               </div>
            </div>
