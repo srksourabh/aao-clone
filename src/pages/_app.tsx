@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ErrorBoundary } from "react-error-boundary";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   return (
@@ -78,8 +79,10 @@ export default function App({ Component, pageProps }: AppProps) {
         window.location.href = "/";
       }}
     >
-      <Component {...pageProps} />
-      <Toaster />
+      <AuthProvider>
+        <Component {...pageProps} />
+        <Toaster />
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

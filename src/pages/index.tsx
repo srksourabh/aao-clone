@@ -9,6 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Phone, Facebook, MessageCircle, Shield, Users, Clock, Briefcase, Star, Award, MapPin, Navigation, Car, Plus, Minus, Sparkles, Mic, MicOff, Calendar as CalendarIcon } from "lucide-react";
 import { CookieConsent } from "@/components/CookieConsent";
 import { MobileMenu } from "@/components/MobileMenu";
+import { AuthNav } from "@/components/AuthNav";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,6 +144,7 @@ export default function HomePage() {
               <Link href="/#testimonials" className="text-sm font-medium text-white hover:text-white/80 transition drop-shadow-md">
                 Testimonials
               </Link>
+              <AuthNav variant="desktop" />
               <a
                 href="tel:+917890302302"
                 className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-sm font-medium text-white hover:bg-white/30 transition border border-white/30 drop-shadow-lg"
