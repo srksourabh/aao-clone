@@ -1,4 +1,3 @@
-
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Phone, MessageCircle, ArrowLeft, Briefcase, Users, Calendar, Shield } from "lucide-react";
+import { Phone, MessageCircle, ArrowLeft, Briefcase, Users, Calendar, Shield, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CorporatePage() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     companyName: "",
     contactPerson: "",
@@ -24,12 +26,32 @@ export default function CorporatePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLoading(true);
+
+    // Validate form
+    if (!formData.companyName || !formData.contactPerson || !formData.email || !formData.phone) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     const message = encodeURIComponent(
       `Hi AaoCab — Corporate/Group Booking Request\n\nCompany: ${formData.companyName}\nContact Person: ${formData.contactPerson}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nEvent Type: ${formData.eventType}\nEvent Date: ${formData.eventDate}\nNumber of Vehicles: ${formData.numberOfVehicles}\n\nAdditional Details:\n${formData.additionalDetails}`
     );
-    
-    window.open(`https://wa.me/917890302302?text=${message}`, "_blank");
+
+    // Simulate brief delay for UX
+    setTimeout(() => {
+      window.open(`https://wa.me/917890302302?text=${message}`, "_blank");
+      setLoading(false);
+      toast({
+        title: "Request Sent!",
+        description: "Our team will contact you shortly.",
+      });
+    }, 500);
   };
 
   return (
@@ -76,33 +98,41 @@ export default function CorporatePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            <Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+            <Card className="card-interactive group">
               <CardContent className="p-6 text-center">
-                <Briefcase className="w-12 h-12 text-brand-primary mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Corporate Events</h3>
-                <p className="text-sm text-gray-600">Professional transportation for business meetings and conferences</p>
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-600 transition-colors duration-300">
+                  <Briefcase className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <h3 className="font-semibold mb-2 text-gray-900">Corporate Events</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">Professional transportation for business meetings and conferences</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="card-interactive group">
               <CardContent className="p-6 text-center">
-                <Users className="w-12 h-12 text-brand-primary mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Group Travel</h3>
-                <p className="text-sm text-gray-600">Coordinated fleet for large groups and delegations</p>
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-600 transition-colors duration-300">
+                  <Users className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <h3 className="font-semibold mb-2 text-gray-900">Group Travel</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">Coordinated fleet for large groups and delegations</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="card-interactive group">
               <CardContent className="p-6 text-center">
-                <Calendar className="w-12 h-12 text-brand-primary mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Event Management</h3>
-                <p className="text-sm text-gray-600">Complete logistics for conferences and exhibitions</p>
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-600 transition-colors duration-300">
+                  <Calendar className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <h3 className="font-semibold mb-2 text-gray-900">Event Management</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">Complete logistics for conferences and exhibitions</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="card-interactive group">
               <CardContent className="p-6 text-center">
-                <Shield className="w-12 h-12 text-brand-primary mx-auto mb-4" />
-                <h3 className="font-semibold mb-2">Reliable Service</h3>
-                <p className="text-sm text-gray-600">Dedicated account managers and 24/7 support</p>
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-600 transition-colors duration-300">
+                  <Shield className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors duration-300" />
+                </div>
+                <h3 className="font-semibold mb-2 text-gray-900">Reliable Service</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">Dedicated account managers and 24/7 support</p>
               </CardContent>
             </Card>
           </div>
@@ -192,9 +222,23 @@ export default function CorporatePage() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-brand-primary hover:bg-brand-secondary" size="lg">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Send via WhatsApp
+                <Button
+                  type="submit"
+                  className="w-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 hover:shadow-lg"
+                  size="lg"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Send via WhatsApp
+                    </>
+                  )}
                 </Button>
               </form>
               <div className="mt-6 text-center">
