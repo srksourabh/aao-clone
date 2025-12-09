@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Download, CheckCircle, XCircle } from "lucide-react";
+import { LogOut, Download } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -28,7 +28,7 @@ interface Booking {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
+  useRouter(); // Needed for Next.js client-side navigation
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -65,7 +65,7 @@ export default function AdminPage() {
       } else {
         setError(data.error || "Login failed");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ export default function AdminPage() {
         const data = await response.json();
         setBookings(data.bookings || []);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch bookings");
     }
   };

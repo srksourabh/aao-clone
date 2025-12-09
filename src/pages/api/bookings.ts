@@ -4,13 +4,6 @@ import { BookingFormData } from "@/types/booking";
 import { supabase } from "@/lib/supabase";
 import { env } from "@/env.mjs";
 
-interface BookingRecord extends BookingFormData {
-  id: string;
-  status: "pending" | "confirmed" | "cancelled";
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
     const bookingData: BookingFormData = req.body;

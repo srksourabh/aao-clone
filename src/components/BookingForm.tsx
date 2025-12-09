@@ -1,13 +1,36 @@
 import { useState, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Sparkles, CheckCircle2, User, Phone, Mail, Calendar, Clock, MapPin, Car, Snowflake, Mountain, Landmark, X } from 'lucide-react';
+import { Sparkles, CheckCircle2, Phone, Calendar, Clock, MapPin, Car, Snowflake, Mountain, Landmark, X } from 'lucide-react';
 import LocationInput from './LocationInput';
+import { ParsedBookingData } from '@/types/booking';
 
 // --- SUPABASE SETUP ---
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+interface CalculatedPrice {
+  distanceKm: string;
+  finalTotal: number;
+  savings: number;
+  savingsPercent: number;
+  competitorPrices?: {
+    ola: number;
+    uber: number;
+    rapido: number;
+  };
+  isNight: boolean;
+  isFestival: boolean;
+  weatherCondition?: string;
+  festivalName?: string;
+  ratePerKm: string;
+  baseFare: number;
+  driverAllowance: number;
+  petCharge: number;
+  weatherSurcharge: number;
+  gst: number;
+  perks?: string[];
+}
 
 const CAR_TYPES = ['Sedan', 'Sedan XL', 'SUV', 'Innova', 'Tempo Traveller', 'Mini Bus'];
 const RENTAL_PACKAGES = [
@@ -20,8 +43,17 @@ const RENTAL_PACKAGES = [
   '10 Hrs / 100 km'
 ];
 
+// Props interface
+interface BookingFormProps {
+  title?: string;
+  subtitle?: string;
+  onTabChange?: (newTab: string, data: ParsedBookingData) => void;
+  initialData?: ParsedBookingData;
+  isRoundTrip?: boolean;
+}
+
 // Named Export
-export function BookingForm() {
+export function BookingForm(_props: BookingFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -30,7 +62,7 @@ export function BookingForm() {
 
   // --- MODAL STATE (For Pricing) ---
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [calculatedPrice, setCalculatedPrice] = useState<any>(null);
+  const [calculatedPrice, setCalculatedPrice] = useState<CalculatedPrice | null>(null);
 
   // --- NLP STATE ---
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
@@ -67,8 +99,9 @@ export function BookingForm() {
   }, []);
 
   // --- HANDLERS ---
-  const handleChange = (e: any) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target;
+    const value = target instanceof HTMLInputElement && target.type === 'checkbox' ? target.checked : target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };
 
@@ -117,7 +150,7 @@ export function BookingForm() {
   // Real Web Speech API implementation would be needed for actual voice input
 
   // --- PRICING LOGIC ---
-  const handleCalculatePrice = async (e: any) => {
+  const handleCalculatePrice = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if(!formData.from_location || !formData.trip_date || !formData.name || !formData.phone) {
@@ -185,7 +218,7 @@ export function BookingForm() {
     setStatus(null);
     setShowQuoteModal(false);
 
-    const finalData: any = {
+    const finalData: Record<string, unknown> = {
       name: formData.name,
       phone: formData.phone,
       email: formData.email,
@@ -243,9 +276,10 @@ export function BookingForm() {
       });
       setNaturalLanguageInput('');
       setCalculatedPrice(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error:', error);
-      setStatus('Error: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setStatus('Error: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -403,7 +437,7 @@ export function BookingForm() {
               </div>
 
               {/* VEHICLE & CONTACT (Combined) */}
-              {tripType !== 'rental' && tripType !== 'package' && (
+              {tripType !== 'rental' && (
                   <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '12px', backgroundColor: '#faf5ff' }}>
                     <div style={sectionTitleStyle}>👥 Vehicle & Passengers</div>
                     {/* Car Type */}
