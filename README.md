@@ -1,207 +1,310 @@
-
 # AaoCab - Premium Advance Booking Cab Service
 
-A full-stack, production-ready, mobile-first website for AaoCab, an advance-booking ride-hailing service built with Next.js, TypeScript, and Tailwind CSS.
+A full-stack, production-ready, mobile-first cab booking platform built with Next.js, TypeScript, Tailwind CSS, Supabase, and Stripe.
 
-## 🚀 Features
+![AaoCab](public/Aao_Logo_Final_Aao_Cab_Colour.jpg)
 
-### Core Functionality
-- **Advance Cab Bookings**: Inline booking form with WhatsApp integration
-- **Multiple Vehicle Types**: Sedan, Sedan XL, SUV, Innova, Tempo Traveller, Mini Bus, Custom
-- **Special Requirements**: Baby on board, Patient on board, Pet on board options
-- **Corporate & Group Bookings**: Dedicated page for large-scale transportation
-- **Admin Dashboard**: Booking management with authentication and CSV export
-- **Legal Compliance**: Privacy Policy, Terms of Service, Refund Policy, Accessibility Statement
-- **Cookie Consent**: GDPR-compliant cookie banner
+## Features
 
-### Technical Features
-- **Next.js 15.2** with Pages Router
-- **TypeScript** for type safety
-- **Tailwind CSS v3** for responsive design
-- **Shadcn/UI** component library
-- **Mobile-first responsive design** (360px to 1440px+)
-- **localStorage backup** for booking forms
-- **Accessibility compliance** (WCAG 2.1 AA)
-- **SEO optimized** with proper meta tags
+### Booking System
+- **Advance Cab Bookings** - Book rides in advance with date/time selection
+- **Multiple Vehicle Types** - Sedan, Sedan XL, SUV, Innova, Tempo Traveller, Mini Bus
+- **Trip Types** - One-way, Round trip, Rental packages
+- **Special Requirements** - Baby on board, Patient on board, Pet on board options
+- **Google Places Integration** - Autocomplete for pickup and drop locations
+- **Distance & Fare Calculation** - Automatic fare estimation based on route
 
-## 📋 Prerequisites
+### User Authentication
+- **Email/Password Registration** - Secure account creation with email verification
+- **Social Login Ready** - Supabase Auth supports OAuth providers
+- **Password Recovery** - Forgot password with email reset link
+- **Profile Management** - Update personal details and change password
+- **Protected Routes** - Secure pages that require authentication
+- **Session Management** - Persistent login with "Remember me" option
+
+### Payment Integration
+- **Stripe Payments** - Secure payment processing with Stripe Elements
+- **Multiple Payment Methods** - Cards, UPI, and more via Stripe
+- **Payment Status Tracking** - Track pending, paid, and refunded bookings
+- **Receipt Generation** - Download payment receipts
+- **Refund Support** - Admin-initiated refunds through dashboard
+- **Webhook Handling** - Real-time payment status updates
+
+### User Dashboard
+- **My Bookings** - View all past and upcoming bookings
+- **Booking Details** - Detailed view of each booking with payment status
+- **Cancel Bookings** - Cancel bookings up to 4 hours before trip
+- **Pay Online** - Complete pending payments for bookings
+
+### Admin Dashboard
+- **Booking Management** - View, filter, and manage all bookings
+- **Status Updates** - Update booking status (pending, confirmed, cancelled)
+- **CSV Export** - Export booking data for reporting
+- **Mobile Responsive** - Card-based view on mobile devices
+- **Refund Processing** - Process refunds for paid bookings
+
+### Corporate Bookings
+- **Bulk Inquiries** - Special form for corporate and group bookings
+- **Contact Options** - WhatsApp and phone integration
+
+### Additional Features
+- **Toast Notifications** - User feedback for all actions
+- **Loading States** - Spinners and skeleton screens
+- **Error Handling** - Graceful error messages and offline detection
+- **Offline Banner** - Notify users when connection is lost
+- **Mobile-First Design** - Optimized for all screen sizes
+- **SEO Optimized** - Meta tags and structured data
+- **Legal Compliance** - Privacy Policy, Terms of Service, Refund Policy
+- **Cookie Consent** - GDPR-compliant cookie banner
+- **Accessibility** - WCAG 2.1 AA compliant
+
+## Tech Stack
+
+### Frontend
+- **Next.js 15.2** - React framework with Pages Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS v3** - Utility-first CSS framework
+- **Shadcn/UI** - Accessible component library
+- **Lucide React** - Icon library
+- **Framer Motion** - Animations
+
+### Backend & Database
+- **Supabase** - PostgreSQL database and authentication
+- **Next.js API Routes** - Serverless API endpoints
+
+### Payments
+- **Stripe** - Payment processing
+- **@stripe/react-stripe-js** - React components for Stripe Elements
+- **stripe** - Node.js Stripe SDK
+
+### Maps & Location
+- **Google Places API** - Location autocomplete
+- **@react-google-maps/api** - Google Maps React wrapper
+
+### Forms & Validation
+- **React Hook Form** - Form state management
+- **Zod** - Schema validation
+
+## Prerequisites
 
 - Node.js 18+ and npm
-- Git
+- Supabase account
+- Stripe account
+- Google Cloud account (for Places API)
 
-## 🛠️ Installation
+## Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone <repository-url>
-cd aaocab
+cd aao-clone
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+3. **Set up environment variables:**
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your credentials:
-```env
-# Admin Dashboard Credentials
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=YourSecurePassword123!
-ADMIN_TOKEN=your-secure-token-here
+4. **Configure environment variables** (see Environment Variables section below)
 
-# Optional: Analytics, monitoring, etc.
-# NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+5. **Set up Supabase database:**
+
+Create a `bookings` table in Supabase with the following schema:
+```sql
+CREATE TABLE bookings (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  email VARCHAR(255),
+  from_location TEXT NOT NULL,
+  to_location TEXT NOT NULL,
+  trip_date DATE NOT NULL,
+  return_date DATE,
+  trip_time TIME NOT NULL,
+  trip_type VARCHAR(50) NOT NULL,
+  car_type VARCHAR(50) NOT NULL,
+  passengers INTEGER DEFAULT 1,
+  status VARCHAR(50) DEFAULT 'pending',
+  total_amount DECIMAL(10,2),
+  distance_km DECIMAL(10,2),
+  baby_on_board BOOLEAN DEFAULT FALSE,
+  patient_on_board BOOLEAN DEFAULT FALSE,
+  pet_on_board BOOLEAN DEFAULT FALSE,
+  rental_package VARCHAR(100),
+  waiting_time VARCHAR(50),
+  price_metadata JSONB,
+  admin_notes TEXT,
+  payment_status VARCHAR(50) DEFAULT 'pending',
+  payment_id VARCHAR(255),
+  payment_date TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
-4. Run the development server:
+6. **Run the development server:**
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+7. **Open [http://localhost:3000](http://localhost:3000)**
 
-## 📁 Project Structure
+## Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+
+# Google Places API
+NEXT_PUBLIC_GOOGLE_PLACES_API_KEY="your-google-places-api-key"
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_your_publishable_key"
+STRIPE_SECRET_KEY="sk_test_your_secret_key"
+STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
+
+# Admin Dashboard Credentials
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="your-secure-password"
+ADMIN_TOKEN="your-secure-token"
+```
+
+### Getting API Keys
+
+**Supabase:**
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to Settings > API
+3. Copy the Project URL and anon/public key
+
+**Google Places API:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project
+3. Enable Places API
+4. Create credentials (API Key)
+5. Restrict the key to your domains
+
+**Stripe:**
+1. Create an account at [stripe.com](https://stripe.com)
+2. Go to Developers > API Keys
+3. Copy publishable and secret keys
+4. For webhooks, go to Developers > Webhooks
+5. Add endpoint: `https://yourdomain.com/api/payments/webhook`
+6. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`
+
+## Project Structure
 
 ```
-aaocab/
-├── public/                          # Static assets
-│   ├── Aao_Cab_mnemonic_Colour_3x.png
-│   ├── Aao_Logo_Final_Aao_Cab_Colour.jpg
-│   ├── Aao_Logo_Final_Aao_Cab_White.jpg
-│   └── [car images]
+aao-clone/
+├── public/                     # Static assets and images
 ├── src/
-│   ├── components/                  # React components
-│   │   ├── ui/                     # Shadcn/UI components
-│   │   ├── BookingForm.tsx         # Main booking form
-│   │   └── CookieConsent.tsx       # Cookie consent banner
-│   ├── pages/                       # Next.js pages
-│   │   ├── api/                    # API routes
-│   │   │   ├── auth/               # Authentication
-│   │   │   └── bookings.ts         # Booking management
-│   │   ├── admin/                  # Admin dashboard
-│   │   ├── index.tsx               # Homepage
-│   │   ├── corporate.tsx           # Corporate bookings
-│   │   ├── privacy.tsx             # Privacy policy
-│   │   ├── terms.tsx               # Terms of service
-│   │   ├── refund.tsx              # Refund policy
-│   │   └── accessibility.tsx       # Accessibility statement
+│   ├── components/            # React components
+│   │   ├── ui/               # Shadcn/UI components
+│   │   ├── AuthNav.tsx       # Authentication navigation
+│   │   ├── BookingForm.tsx   # Main booking form
+│   │   ├── LoadingSpinner.tsx # Loading indicator
+│   │   ├── OfflineBanner.tsx # Offline notification
+│   │   ├── PaymentForm.tsx   # Stripe payment form
+│   │   └── ProtectedRoute.tsx # Auth route wrapper
+│   ├── contexts/
+│   │   └── AuthContext.tsx   # Authentication context
+│   ├── hooks/
+│   │   ├── use-toast.ts      # Toast notifications
+│   │   └── useNetworkStatus.ts # Network detection
+│   ├── lib/
+│   │   ├── supabase.ts       # Supabase client
+│   │   ├── errors.ts         # Error handling utilities
+│   │   └── utils.ts          # General utilities
+│   ├── pages/
+│   │   ├── api/              # API routes
+│   │   │   ├── auth/         # Auth endpoints
+│   │   │   ├── payments/     # Payment endpoints
+│   │   │   └── bookings.ts   # Booking endpoints
+│   │   ├── admin/            # Admin dashboard
+│   │   ├── booking/          # Booking details
+│   │   ├── payment/          # Payment pages
+│   │   ├── index.tsx         # Homepage
+│   │   ├── login.tsx         # Login page
+│   │   ├── register.tsx      # Registration page
+│   │   ├── profile.tsx       # User profile
+│   │   ├── my-bookings.tsx   # User bookings
+│   │   ├── forgot-password.tsx
+│   │   ├── reset-password.tsx
+│   │   ├── corporate.tsx     # Corporate bookings
+│   │   ├── privacy.tsx       # Privacy policy
+│   │   ├── terms.tsx         # Terms of service
+│   │   ├── refund.tsx        # Refund policy
+│   │   └── accessibility.tsx # Accessibility statement
 │   ├── styles/
-│   │   └── globals.css             # Global styles and theme
-│   ├── types/
-│   │   └── booking.ts              # TypeScript types
-│   └── lib/
-│       └── utils.ts                # Utility functions
-├── .env.local                       # Environment variables (not in repo)
-├── next.config.mjs                  # Next.js configuration
-├── tailwind.config.ts               # Tailwind CSS configuration
-├── tsconfig.json                    # TypeScript configuration
-└── package.json                     # Dependencies
+│   │   └── globals.css       # Global styles
+│   └── types/
+│       └── booking.ts        # TypeScript types
+├── .env.local                 # Environment variables
+├── next.config.mjs           # Next.js configuration
+├── tailwind.config.ts        # Tailwind configuration
+└── tsconfig.json             # TypeScript configuration
 ```
 
-## 🎨 Brand Colors
+## Available Scripts
 
-The website uses AaoCab's official brand colors:
+```bash
+npm run dev          # Start development server with Turbopack
+npm run build        # Build for production
+npm start            # Start production server
+npm run lint         # Run ESLint
+```
 
-- **Primary**: HSL(250, 70%, 55%) - Purple/Blue
-- **Secondary**: HSL(260, 60%, 45%) - Darker Purple
-- **Accent**: HSL(280, 50%, 60%) - Lighter Purple
-- **Light**: HSL(250, 100%, 97%) - Very Light Background
-- **Dark**: HSL(250, 50%, 20%) - Dark Text
-
-## 📱 Key Pages & Routes
-
-### Public Pages
-- `/` - Homepage with booking form
-- `/corporate` - Corporate & group bookings
-- `/privacy` - Privacy Policy
-- `/terms` - Terms of Service
-- `/refund` - Refund & Cancellation Policy
-- `/accessibility` - Accessibility Statement
-
-### Admin Pages
-- `/admin` - Admin dashboard (requires authentication)
-
-### API Routes
-- `/api/auth/login` - Admin authentication
-- `/api/bookings` - Booking management (GET/POST)
-
-## 🔐 Admin Dashboard
-
-**Default Credentials** (change in production):
-- Username: `admin`
-- Password: `AaoCab@2025`
-
-**Features:**
-- View all bookings
-- Export bookings to CSV
-- Filter and search bookings
-- View booking details and special requirements
-
-**Security:**
-- Token-based authentication
-- Environment variable credentials
-- Session management with localStorage
-
-## 📞 Contact Integration
-
-### WhatsApp Integration
-Primary contact method: WhatsApp
-- Number: +91 78903 02302
-- Auto-generates pre-filled messages with booking details
-- Fallback to phone call if WhatsApp unavailable
-
-### Phone Integration
-Fallback contact method: Direct call
-- tel: +917890302302
-- Automatically opens phone dialer on mobile
-
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
+
 1. Push code to GitHub
-2. Import project in Vercel
+2. Import project in [Vercel](https://vercel.com)
 3. Add environment variables in Vercel dashboard
 4. Deploy
 
 ### Manual Deployment
+
 ```bash
 npm run build
 npm start
 ```
 
-## ✅ Accessibility Compliance
+### Stripe Webhook Setup for Production
 
-The website meets WCAG 2.1 Level AA standards:
+1. In Stripe Dashboard, go to Developers > Webhooks
+2. Add endpoint: `https://yourdomain.com/api/payments/webhook`
+3. Select events:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `charge.refunded`
+4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
 
-- ✅ Semantic HTML structure
-- ✅ Keyboard navigation support
-- ✅ High contrast colors (4.5:1 minimum)
-- ✅ Descriptive alt text for images
-- ✅ ARIA labels and landmarks
-- ✅ Responsive design across devices
-- ✅ Reduced motion support
-- ✅ Form labels and error handling
+## API Routes
 
-## 🧪 Testing
+### Authentication
+- `POST /api/auth/login` - Admin login
+- `POST /api/auth/logout` - Logout
 
-### Manual Testing Checklist
-- [ ] Booking form validation
-- [ ] WhatsApp link generation
-- [ ] Phone fallback functionality
-- [ ] localStorage persistence
-- [ ] Admin authentication
-- [ ] CSV export
-- [ ] Mobile responsiveness
-- [ ] Cross-browser compatibility
-- [ ] Accessibility with screen readers
-- [ ] Cookie consent functionality
+### Bookings
+- `GET /api/bookings` - Get all bookings (admin)
+- `POST /api/bookings` - Create new booking
+- `PUT /api/bookings` - Update booking status
 
-### Browser Support
+### Payments
+- `POST /api/payments/create-intent` - Create Stripe PaymentIntent
+- `POST /api/payments/webhook` - Handle Stripe webhooks
+- `POST /api/payments/refund` - Process refund (admin)
+
+## Browser Support
+
 - Chrome 90+
 - Firefox 88+
 - Safari 14+
@@ -209,86 +312,22 @@ The website meets WCAG 2.1 Level AA standards:
 - Mobile Safari (iOS 14+)
 - Chrome Mobile (Android 5+)
 
-## 📊 Performance Targets
+## Performance Targets
 
-### Lighthouse Scores
-- **Performance**: ≥ 70 (mobile)
-- **Accessibility**: ≥ 90
-- **Best Practices**: ≥ 90
-- **SEO**: ≥ 90
+- **Performance**: >= 70 (mobile)
+- **Accessibility**: >= 90
+- **Best Practices**: >= 90
+- **SEO**: >= 90
 
-## 🔧 Development
+## Contact & Support
 
-### Available Scripts
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm start            # Start production server
-npm run lint         # Run ESLint
-```
+- **Phone**: +91 78903 02302
+- **WhatsApp**: +91 78903 02302
 
-### Code Style
-- TypeScript strict mode enabled
-- ESLint for code quality
-- Prettier for formatting (recommended)
-- Double quotes for strings
-- Named exports for components
+## License
 
-## 🌐 Environment Variables
-
-Required environment variables:
-
-```env
-# Admin Authentication
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-password
-ADMIN_TOKEN=your-secure-token
-
-# Optional
-NEXT_PUBLIC_GA_ID=your-ga-id
-```
-
-## 📝 License
-
-© 2025 AaoCab. All rights reserved.
-
-## 🤝 Support
-
-For technical support or questions:
-- Email: support@aaocab.com (if available)
-- Phone: +91 78903 02302
-- WhatsApp: +91 78903 02302
-
-## 🔄 Version History
-
-### v1.0.0 (November 2025)
-- Initial production release
-- Core booking functionality
-- Admin dashboard
-- Legal compliance pages
-- Cookie consent
-- Corporate booking page
-- Mobile-first responsive design
-- WCAG 2.1 AA accessibility
-
-## 🚧 Future Enhancements
-
-Potential features for future releases:
-- Real-time booking status updates
-- SMS notifications
-- Payment gateway integration
-- Driver tracking
-- Multi-language support
-- Native mobile apps
-- Advanced analytics dashboard
-
-## 📖 Documentation
-
-For detailed component documentation and API references, see:
-- [Components Documentation](./docs/components.md) (to be created)
-- [API Documentation](./docs/api.md) (to be created)
-- [Deployment Guide](./docs/deployment.md) (to be created)
+Copyright 2025 AaoCab. All rights reserved.
 
 ---
 
-**Built with ❤️ for AaoCab by Softgen**
+**Built with Next.js, Supabase, and Stripe**

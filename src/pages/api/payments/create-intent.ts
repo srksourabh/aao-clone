@@ -1,11 +1,31 @@
+/**
+ * Create Payment Intent API
+ *
+ * Creates a Stripe PaymentIntent for a booking payment.
+ * This endpoint is called when a user initiates payment for their booking.
+ *
+ * Flow:
+ * 1. Validates required fields (bookingId, amount)
+ * 2. Verifies booking exists and isn't already paid
+ * 3. Creates Stripe PaymentIntent with booking metadata
+ * 4. Updates booking with payment_intent_id
+ * 5. Returns client_secret for Stripe Elements
+ *
+ * @method POST
+ * @body {bookingId: number, amount: number, customerEmail?: string, customerName?: string}
+ * @returns {clientSecret: string, paymentIntentId: string}
+ */
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+// Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-01-27.acacia',
 });
 
+// Create Supabase client for database operations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''

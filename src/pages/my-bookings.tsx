@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BookingCardSkeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -255,8 +256,10 @@ export default function MyBookingsPage() {
 
           {/* Bookings List */}
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <BookingCardSkeleton key={i} />
+              ))}
             </div>
           ) : bookings.length === 0 ? (
             <Card>

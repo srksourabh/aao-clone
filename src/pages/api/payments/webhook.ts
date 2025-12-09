@@ -1,18 +1,39 @@
+/**
+ * Stripe Webhook Handler
+ *
+ * Handles incoming webhook events from Stripe to update payment status
+ * in the database. Processes the following events:
+ *
+ * - payment_intent.succeeded: Marks booking as paid, stores payment record
+ * - payment_intent.payment_failed: Updates booking with failed status
+ * - charge.refunded: Updates booking and payment with refund details
+ *
+ * Security:
+ * - Verifies webhook signature using STRIPE_WEBHOOK_SECRET
+ * - Requires raw request body for signature verification
+ * - Returns 400 for invalid signatures
+ */
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { buffer } from 'micro';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+// Initialize Stripe with API version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-01-27.acacia',
 });
 
+// Create Supabase client for database operations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-// Disable body parsing, need raw body for webhook signature verification
+/**
+ * Disable Next.js body parsing to access raw request body
+ * Required for Stripe webhook signature verification
+ */
 export const config = {
   api: {
     bodyParser: false,

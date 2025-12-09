@@ -1,13 +1,32 @@
+/**
+ * AuthContext.tsx
+ *
+ * Provides authentication state and methods throughout the application.
+ * Uses Supabase Auth for user management including:
+ * - Email/password authentication
+ * - Session management with "Remember Me" option
+ * - Password recovery flow
+ * - Profile management
+ * - Email verification
+ */
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 
+/**
+ * User profile data that can be updated
+ */
 interface UserProfile {
   full_name?: string;
   phone?: string;
   avatar_url?: string;
 }
 
+/**
+ * Authentication context type definition
+ * Provides all auth-related state and methods
+ */
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -52,6 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  /**
+   * Register a new user account
+   * Creates user in Supabase Auth and optionally in users table
+   * Sends verification email to the provided address
+   *
+   * @param email - User's email address
+   * @param password - Password (min 6 characters)
+   * @param name - User's full name
+   * @param phone - User's phone number
+   * @returns Object with error message if failed, null if successful
+   */
   const signUp = async (email: string, password: string, name: string, phone: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
