@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Phone, MessageCircle, Briefcase, Home, Info, FileText } from "lucide-react";
+import { AuthNav } from "./AuthNav";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
@@ -46,6 +47,8 @@ export function MobileMenu() {
             </Button>
           </Link>
           
+          <AuthNav variant="mobile" onItemClick={() => setOpen(false)} />
+
           <div className="border-t pt-4 mt-4">
             <p className="text-sm font-semibold text-gray-600 mb-3 px-4">Contact Us</p>
             <a href="tel:+917890302302" onClick={() => setOpen(false)}>
