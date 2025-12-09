@@ -215,17 +215,11 @@ export default function HomePage() {
               )}
 
               {activeTab === "rental" && (
-                <RentalTab 
-                  onTabChange={handleTabChangeWithData}
-                  initialData={parsedData}
-                />
+                <BookingForm />
               )}
 
               {activeTab === "package" && (
-                <PackageTab 
-                  onTabChange={handleTabChangeWithData}
-                  initialData={parsedData}
-                />
+                <BookingForm />
               )}
             </div>
           </div>

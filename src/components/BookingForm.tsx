@@ -210,20 +210,6 @@ export function BookingForm() {
   };
 
   // --- STYLES ---
-  // The Floating Button Style
-  const navButtonStyle = (isActive: boolean) => ({
-    padding: '10px 24px',
-    borderRadius: '30px',
-    border: isActive ? 'none' : '1px solid rgba(255,255,255,0.3)',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '14px',
-    backgroundColor: isActive ? 'white' : 'rgba(0,0,0,0.5)', 
-    color: isActive ? '#6d28d9' : 'white',
-    transition: 'all 0.2s',
-    boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
-  });
-
   const sectionTitleStyle = {
     color: '#4c1d95', fontWeight: 'bold', marginBottom: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px'
   };
@@ -235,13 +221,7 @@ export function BookingForm() {
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', fontFamily: 'sans-serif', position: 'relative' }}>
       
-      {/* 1. FLOATING NAVIGATION BUTTONS (The only buttons) */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '25px', flexWrap: 'wrap' }}>
-        <button type="button" onClick={() => setTripType('oneway')} style={navButtonStyle(tripType === 'oneway')}>One-Way Trip</button>
-        <button type="button" onClick={() => setTripType('roundtrip')} style={navButtonStyle(tripType === 'roundtrip')}>Round Trip</button>
-        <button type="button" onClick={() => setTripType('rental')} style={navButtonStyle(tripType === 'rental')}>Rental</button>
-        <button type="button" onClick={() => setTripType('package')} style={navButtonStyle(tripType === 'package')}>Package</button>
-      </div>
+      {/* REMOVED: Duplicate floating navigation buttons - now handled by parent page */}
 
       {/* 2. PURPLE HEADER CARD (Clean, No Tabs Inside) */}
       <div style={{ backgroundColor: '#6d28d9', color: 'white', borderRadius: '16px 16px 0 0', boxShadow: '0 4px 20px rgba(109, 40, 217, 0.3)', overflow: 'hidden' }}>
@@ -386,8 +366,8 @@ export function BookingForm() {
               </div>
 
               {/* VEHICLE & CONTACT (Combined) */}
-              {tripType !== 'rental' && (
-                  <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
+              {tripType !== 'rental' && tripType !== 'package' && (
+                  <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '12px', backgroundColor: '#faf5ff' }}>
                     <div style={sectionTitleStyle}>👥 Vehicle & Passengers</div>
                     {/* Car Type */}
                     <div style={{ marginBottom: '15px' }}>
@@ -424,6 +404,22 @@ export function BookingForm() {
                         <input type="checkbox" name="pet_on_board" checked={formData.pet_on_board} onChange={handleChange} style={{ width: '18px', height: '18px', accentColor: '#16a34a' }} />
                         <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>Pet</span>
                       </label>
+                    </div>
+                  </div>
+              )}
+
+              {/* RENTAL VEHICLE SECTION */}
+              {tripType === 'rental' && (
+                  <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '12px', backgroundColor: '#faf5ff' }}>
+                    <div style={sectionTitleStyle}><Car size={18}/> Vehicle Type</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                      {CAR_TYPES.map((type) => (
+                        <label key={type} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '8px', border: formData.car_type === type ? '2px solid #6d28d9' : '1px solid #e5e7eb', backgroundColor: formData.car_type === type ? '#f5f3ff' : 'white', cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <input type="radio" name="car_type" value={type} checked={formData.car_type === type} onChange={handleChange} style={{ display: 'none' }} />
+                          <Car size={24} color={formData.car_type === type ? '#6d28d9' : '#9ca3af'} />
+                          <span style={{ marginTop: '5px', fontSize: '12px', fontWeight: '600', color: formData.car_type === type ? '#6d28d9' : '#374151' }}>{type}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
               )}
