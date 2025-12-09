@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    initGoogleMaps?: () => void;
+    google?: typeof google;
+  }
+}
 
 let isLoading = false;
 let isLoaded = false;
@@ -57,12 +63,12 @@ export async function loadGoogleMapsScript(apiKey: string): Promise<void> {
       script.async = true;
       script.defer = true;
 
-      (window as any).initGoogleMaps = () => {
+      window.initGoogleMaps = () => {
         isLoaded = true;
         isLoading = false;
         console.log("✅ Google Maps API loaded successfully");
         console.log("✅ Places library available:", !!window.google?.maps?.places);
-        delete (window as any).initGoogleMaps;
+        delete window.initGoogleMaps;
         resolve();
       };
 

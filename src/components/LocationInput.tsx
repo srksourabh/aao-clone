@@ -25,7 +25,13 @@ export default function LocationInput({
   return <SearchBox label={label} onLocationSelect={onLocationSelect} defaultValue={defaultValue} />;
 }
 
-function SearchBox({ label, onLocationSelect, defaultValue }: any) {
+interface SearchBoxProps {
+  label: string;
+  onLocationSelect: (address: string) => void;
+  defaultValue: string;
+}
+
+function SearchBox({ label, onLocationSelect, defaultValue }: SearchBoxProps) {
   const {
     ready,
     value,
@@ -46,7 +52,7 @@ function SearchBox({ label, onLocationSelect, defaultValue }: any) {
     }
   }, [defaultValue, setValue]);
 
-  const handleInput = (e: any) => setValue(e.target.value);
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value);
 
   const handleSelect = async (address: string) => {
     setValue(address, false);

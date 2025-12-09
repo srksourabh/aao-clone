@@ -157,9 +157,9 @@ export const calculateCompetitivePrice = (params: PriceParams) => {
   const petCharge = hasPet ? 600 : 0;
 
   // 8. Calculate Total
-  let subTotal = baseFare + driverAllowance + petCharge + weatherSurcharge;
+  const subTotal = baseFare + driverAllowance + petCharge + weatherSurcharge;
   const gst = Math.round(subTotal * 0.05); // 5% GST
-  let finalTotal = subTotal + gst;
+  const finalTotal = subTotal + gst;
 
   // 9. Competitor Analysis - Get real competitor prices
   const competitorPrices = estimateCompetitorPrices(distanceKm, carType, isNight, isFestival);

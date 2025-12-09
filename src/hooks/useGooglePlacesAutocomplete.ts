@@ -85,7 +85,8 @@ export function useGooglePlacesAutocomplete() {
           return;
         }
 
-        if (!isReady || !autocompleteServiceRef.current) {
+        const autocompleteService = autocompleteServiceRef.current;
+        if (!isReady || !autocompleteService) {
           console.warn("⚠️ Google Places not ready yet - manual input available");
           setIsLoadingSuggestions(false);
           resolve([]);
@@ -107,7 +108,7 @@ export function useGooglePlacesAutocomplete() {
 
             const fetchPromise = new Promise<google.maps.places.AutocompletePrediction[]>(
               (resolveAPI, rejectAPI) => {
-                autocompleteServiceRef.current!.getPlacePredictions(
+                autocompleteService.getPlacePredictions(
                   {
                     input,
                     componentRestrictions: { country: "in" },
@@ -144,9 +145,10 @@ export function useGooglePlacesAutocomplete() {
             setIsLoadingSuggestions(false);
             console.log(`✅ Found ${formattedSuggestions.length} suggestions for "${input}"`);
             resolve(formattedSuggestions);
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.error("❌ Error fetching suggestions:", err);
-            if (err.message !== "Request cancelled") {
+            const errorMessage = err instanceof Error ? err.message : "";
+            if (errorMessage !== "Request cancelled") {
               setSuggestions([]);
               setIsLoadingSuggestions(false);
             }
@@ -160,7 +162,8 @@ export function useGooglePlacesAutocomplete() {
 
   const getPlaceDetails = useCallback(
     async (placeId: string): Promise<PlaceDetails | null> => {
-      if (!isReady || !placesServiceRef.current) {
+      const placesService = placesServiceRef.current;
+      if (!isReady || !placesService) {
         console.warn("⚠️ Places service not ready");
         return null;
       }
@@ -171,7 +174,7 @@ export function useGooglePlacesAutocomplete() {
         });
 
         const fetchPromise = new Promise<google.maps.places.PlaceResult>((resolve, reject) => {
-          placesServiceRef.current!.getDetails(
+          placesService.getDetails(
             {
               placeId,
               fields: ["name", "formatted_address", "geometry", "address_components"],
@@ -226,7 +229,8 @@ export function useGooglePlacesAutocomplete() {
       return null;
     }
 
-    if (!isReady || !geocoderRef.current) {
+    const geocoder = geocoderRef.current;
+    if (!isReady || !geocoder) {
       console.warn("⚠️ Geocoder not ready");
       return null;
     }
@@ -244,7 +248,7 @@ export function useGooglePlacesAutocomplete() {
       console.log(`📍 Got current location: ${latitude}, ${longitude}`);
 
       const results = await new Promise<google.maps.GeocoderResult[]>((resolve, reject) => {
-        geocoderRef.current!.geocode(
+        geocoder.geocode(
           { location: { lat: latitude, lng: longitude } },
           (results, status) => {
             if (status === "OK" && results && results.length > 0) {
