@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, CalendarCheck } from 'lucide-react';
+import { User, LogOut, CalendarCheck, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,12 @@ export function AuthNav({ variant = 'desktop', onItemClick }: AuthNavProps) {
             <Button variant="outline" className="w-full justify-start mb-2" size="lg">
               <CalendarCheck className="w-5 h-5 mr-3" />
               My Bookings
+            </Button>
+          </Link>
+          <Link href="/profile" onClick={onItemClick}>
+            <Button variant="outline" className="w-full justify-start mb-2" size="lg">
+              <Settings className="w-5 h-5 mr-3" />
+              Profile Settings
             </Button>
           </Link>
           <Button
@@ -88,6 +94,12 @@ export function AuthNav({ variant = 'desktop', onItemClick }: AuthNavProps) {
             <Link href="/my-bookings" className="cursor-pointer">
               <CalendarCheck className="w-4 h-4 mr-2" />
               My Bookings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/profile" className="cursor-pointer">
+              <Settings className="w-4 h-4 mr-2" />
+              Profile Settings
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
