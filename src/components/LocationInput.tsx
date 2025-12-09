@@ -15,7 +15,7 @@ export default function LocationInput({
 }) {
   
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || "",
     libraries,
   });
 
@@ -62,7 +62,7 @@ function SearchBox({ label, onLocationSelect, defaultValue }: any) {
         const { latitude, longitude } = position.coords;
         try {
           const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`
           );
           const resultData = await response.json();
           if (resultData.results[0]) {
