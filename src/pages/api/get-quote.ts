@@ -13,21 +13,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ---------------------------------------------------------
     // INTELLIGENT DISTANCE CALCULATION
     // ---------------------------------------------------------
-    if (process.env.GOOGLE_MAPS_SERVER_KEY) {
-        
+    if (process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY) {
+
         // 1. Determine the best source for location (Coordinates preferred, Text fallback)
-        const originPoint = fromCoordinates 
-            ? `${fromCoordinates.lat},${fromCoordinates.lng}` 
+        const originPoint = fromCoordinates
+            ? `${fromCoordinates.lat},${fromCoordinates.lng}`
             : from; // Use user's typed text (e.g. "Delhi")
 
-        const destPoint = toCoordinates 
-            ? `${toCoordinates.lat},${toCoordinates.lng}` 
+        const destPoint = toCoordinates
+            ? `${toCoordinates.lat},${toCoordinates.lng}`
             : to;   // Use user's typed text (e.g. "Agra")
 
         // 2. Call Google Matrix API
         // This API accepts both "Lat,Lng" AND "City Name" strings automatically
-        const googleUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(originPoint)}&destinations=${encodeURIComponent(destPoint)}&key=${process.env.GOOGLE_MAPS_SERVER_KEY}`;
-        
+        const googleUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(originPoint)}&destinations=${encodeURIComponent(destPoint)}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`;
+
         const googleRes = await fetch(googleUrl);
         const googleData = await googleRes.json();
 

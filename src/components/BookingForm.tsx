@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Sparkles, Mic, MicOff, CheckCircle2, User, Phone, Mail, Calendar, Clock, MapPin, Car, Snowflake, Mountain, Landmark, X } from 'lucide-react';
+import { Sparkles, CheckCircle2, User, Phone, Mail, Calendar, Clock, MapPin, Car, Snowflake, Mountain, Landmark, X } from 'lucide-react';
 import LocationInput from './LocationInput';
 
 // --- SUPABASE SETUP ---
@@ -34,7 +34,6 @@ export function BookingForm() {
 
   // --- NLP STATE ---
   const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
-  const [isListening, setIsListening] = useState(false);
   const [showNLParsed, setShowNLParsed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); 
 
@@ -114,15 +113,8 @@ export function BookingForm() {
     setTimeout(() => setShowNLParsed(false), 3000);
   };
 
-  const toggleVoiceInput = () => {
-     setIsListening(!isListening);
-     if(!isListening) {
-         setTimeout(() => {
-             setIsListening(false);
-             setNaturalLanguageInput("Round Trip from Kolkata to Durgapur tomorrow with 2 hours waiting"); 
-         }, 2000);
-     }
-  };
+  // Voice input removed - was a mock implementation
+  // Real Web Speech API implementation would be needed for actual voice input
 
   // --- PRICING LOGIC ---
   const handleCalculatePrice = async (e: any) => {
@@ -323,17 +315,12 @@ export function BookingForm() {
                 <Sparkles size={20} color="#4f46e5" />
                 <h3 style={{ margin: 0, color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>Smart Booking Agent</h3>
               </div>
-              <div style={{ position: 'relative' }}>
-                <textarea
-                  value={naturalLanguageInput}
-                  onChange={(e) => setNaturalLanguageInput(e.target.value)}
-                  placeholder="e.g. Round Trip from Kolkata to Durgapur tomorrow with 2 hours waiting"
-                  style={{ width: '100%', minHeight: '60px', padding: '12px', paddingRight: '40px', borderRadius: '8px', border: '1px solid #c7d2fe', fontSize: '14px', resize: 'none' }}
-                />
-                <button type="button" onClick={toggleVoiceInput} style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: isListening ? '#dc2626' : '#4f46e5' }}>
-                  {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                </button>
-              </div>
+              <textarea
+                value={naturalLanguageInput}
+                onChange={(e) => setNaturalLanguageInput(e.target.value)}
+                placeholder="e.g. Round Trip from Kolkata to Durgapur tomorrow with 2 hours waiting"
+                style={{ width: '100%', minHeight: '60px', padding: '12px', borderRadius: '8px', border: '1px solid #c7d2fe', fontSize: '14px', resize: 'none' }}
+              />
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                  <button onClick={parseNaturalLanguage} type="button" style={{ backgroundColor: '#4f46e5', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Auto-Fill</button>
               </div>
@@ -485,9 +472,48 @@ export function BookingForm() {
               </div>
 
               {/* ACTION BUTTON */}
-              <button type="submit" style={{ width: '100%', padding: '16px', backgroundColor: '#6d28d9', color: 'white', border: 'none', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(109, 40, 217, 0.25)' }}>
-                View Price & Plan
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: loading ? '#9ca3af' : '#6d28d9',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(109, 40, 217, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span style={{
+                      border: '3px solid #f3f3f3',
+                      borderTop: '3px solid #6d28d9',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      animation: 'spin 1s linear infinite'
+                    }}></span>
+                    Calculating...
+                  </>
+                ) : (
+                  'View Price & Plan'
+                )}
               </button>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
             </form>
           </>
         )}
