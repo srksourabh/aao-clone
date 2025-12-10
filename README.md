@@ -1,6 +1,6 @@
 # AaoCab - Premium Advance Booking Cab Service
 
-A full-stack, production-ready, mobile-first cab booking platform built with Next.js, TypeScript, Tailwind CSS, Supabase, and Stripe.
+A full-stack, production-ready, mobile-first cab booking platform built with Next.js, TypeScript, Tailwind CSS, Supabase, and Razorpay.
 
 ![AaoCab](public/Aao_Logo_Final_Aao_Cab_Colour.jpg)
 
@@ -23,8 +23,8 @@ A full-stack, production-ready, mobile-first cab booking platform built with Nex
 - **Session Management** - Persistent login with "Remember me" option
 
 ### Payment Integration
-- **Stripe Payments** - Secure payment processing with Stripe Elements
-- **Multiple Payment Methods** - Cards, UPI, and more via Stripe
+- **Razorpay Payments** - Secure payment processing with Razorpay checkout
+- **Multiple Payment Methods** - Cards, UPI, Net Banking, Wallets via Razorpay
 - **Payment Status Tracking** - Track pending, paid, and refunded bookings
 - **Receipt Generation** - Download payment receipts
 - **Refund Support** - Admin-initiated refunds through dashboard
@@ -73,9 +73,8 @@ A full-stack, production-ready, mobile-first cab booking platform built with Nex
 - **Next.js API Routes** - Serverless API endpoints
 
 ### Payments
-- **Stripe** - Payment processing
-- **@stripe/react-stripe-js** - React components for Stripe Elements
-- **stripe** - Node.js Stripe SDK
+- **Razorpay** - Payment processing
+- **razorpay** - Node.js Razorpay SDK
 
 ### Maps & Location
 - **Google Places API** - Location autocomplete
@@ -89,7 +88,7 @@ A full-stack, production-ready, mobile-first cab booking platform built with Nex
 
 - Node.js 18+ and npm
 - Supabase account
-- Stripe account
+- Razorpay account
 - Google Cloud account (for Places API)
 
 ## Installation
@@ -141,7 +140,11 @@ CREATE TABLE bookings (
   admin_notes TEXT,
   payment_status VARCHAR(50) DEFAULT 'pending',
   payment_id VARCHAR(255),
+  razorpay_order_id VARCHAR(255),
   payment_date TIMESTAMP,
+  refund_id VARCHAR(255),
+  refund_amount DECIMAL(10,2),
+  refund_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -166,10 +169,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 # Google Places API
 NEXT_PUBLIC_GOOGLE_PLACES_API_KEY="your-google-places-api-key"
 
-# Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_your_publishable_key"
-STRIPE_SECRET_KEY="sk_test_your_secret_key"
-STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
+# Razorpay Configuration
+RAZORPAY_KEY_ID="rzp_test_your_key_id"
+RAZORPAY_KEY_SECRET="your_razorpay_key_secret"
+RAZORPAY_WEBHOOK_SECRET="your_webhook_secret"
 
 # Admin Dashboard Credentials
 ADMIN_USERNAME="admin"
@@ -191,13 +194,13 @@ ADMIN_TOKEN="your-secure-token"
 4. Create credentials (API Key)
 5. Restrict the key to your domains
 
-**Stripe:**
-1. Create an account at [stripe.com](https://stripe.com)
-2. Go to Developers > API Keys
-3. Copy publishable and secret keys
-4. For webhooks, go to Developers > Webhooks
+**Razorpay:**
+1. Create an account at [razorpay.com](https://razorpay.com)
+2. Go to Settings > API Keys
+3. Generate and copy Key ID and Key Secret
+4. For webhooks, go to Settings > Webhooks
 5. Add endpoint: `https://yourdomain.com/api/payments/webhook`
-6. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`
+6. Select events: `payment.captured`, `payment.failed`, `refund.created`
 
 ## Project Structure
 
@@ -211,7 +214,7 @@ aao-clone/
 │   │   ├── BookingForm.tsx   # Main booking form
 │   │   ├── LoadingSpinner.tsx # Loading indicator
 │   │   ├── OfflineBanner.tsx # Offline notification
-│   │   ├── PaymentForm.tsx   # Stripe payment form
+│   │   ├── PaymentForm.tsx   # Razorpay payment form
 │   │   └── ProtectedRoute.tsx # Auth route wrapper
 │   ├── contexts/
 │   │   └── AuthContext.tsx   # Authentication context
@@ -277,15 +280,15 @@ npm run build
 npm start
 ```
 
-### Stripe Webhook Setup for Production
+### Razorpay Webhook Setup for Production
 
-1. In Stripe Dashboard, go to Developers > Webhooks
+1. In Razorpay Dashboard, go to Settings > Webhooks
 2. Add endpoint: `https://yourdomain.com/api/payments/webhook`
 3. Select events:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-   - `charge.refunded`
-4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
+   - `payment.captured`
+   - `payment.failed`
+   - `refund.created`
+4. Copy the webhook secret to `RAZORPAY_WEBHOOK_SECRET`
 
 ## API Routes
 
@@ -299,8 +302,9 @@ npm start
 - `PUT /api/bookings` - Update booking status
 
 ### Payments
-- `POST /api/payments/create-intent` - Create Stripe PaymentIntent
-- `POST /api/payments/webhook` - Handle Stripe webhooks
+- `POST /api/payments/create-order` - Create Razorpay order
+- `POST /api/payments/verify` - Verify payment signature
+- `POST /api/payments/webhook` - Handle Razorpay webhooks
 - `POST /api/payments/refund` - Process refund (admin)
 
 ## Browser Support
@@ -330,4 +334,4 @@ Copyright 2025 AaoCab. All rights reserved.
 
 ---
 
-**Built with Next.js, Supabase, and Stripe**
+**Built with Next.js, Supabase, and Razorpay**

@@ -146,10 +146,11 @@ Click on any booking to see:
 
 ### Payment Options
 
-1. **Pay Online** - Secure payment via Stripe
+1. **Pay Online** - Secure payment via Razorpay
    - Credit/Debit Cards
-   - UPI (in supported regions)
+   - UPI
    - Net Banking
+   - Mobile Wallets (Paytm, PhonePe, etc.)
 
 2. **Pay Later** - Cash to driver after trip
 
@@ -157,10 +158,11 @@ Click on any booking to see:
 
 1. Go to your booking details
 2. Click **"Pay Now"** button
-3. Enter your card details
-4. Click **"Pay"**
-5. Wait for confirmation
-6. Download receipt if needed
+3. Razorpay checkout window opens
+4. Choose your payment method (Card/UPI/Net Banking/Wallet)
+5. Complete the payment
+6. Wait for confirmation
+7. Download receipt if needed
 
 ### Payment Status
 
@@ -257,7 +259,7 @@ A: For urgent bookings, call us directly at +91 78903 02302. We'll try our best 
 ### Payment Questions
 
 **Q: Is online payment safe?**
-A: Yes, we use Stripe for secure payment processing. Your card details are encrypted and never stored on our servers.
+A: Yes, we use Razorpay for secure payment processing. Your card details are encrypted and never stored on our servers.
 
 **Q: When will I get my refund?**
 A: Refunds are processed within 5-7 business days to your original payment method.
