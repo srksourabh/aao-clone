@@ -1,28 +1,21 @@
 /**
- * Stripe Webhook Handler
+ * Razorpay Webhook Handler
  *
- * Handles incoming webhook events from Stripe to update payment status
+ * Handles incoming webhook events from Razorpay to update payment status
  * in the database. Processes the following events:
  *
- * - payment_intent.succeeded: Marks booking as paid, stores payment record
- * - payment_intent.payment_failed: Updates booking with failed status
- * - charge.refunded: Updates booking and payment with refund details
+ * - payment.captured: Marks booking as paid
+ * - payment.failed: Updates booking with failed status
+ * - refund.created: Updates booking with refund details
  *
  * Security:
- * - Verifies webhook signature using STRIPE_WEBHOOK_SECRET
- * - Requires raw request body for signature verification
+ * - Verifies webhook signature using RAZORPAY_WEBHOOK_SECRET
  * - Returns 400 for invalid signatures
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { buffer } from 'micro';
-import Stripe from 'stripe';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-
-// Initialize Stripe with API version
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-01-27.acacia',
-});
 
 // Create Supabase client for database operations
 const supabase = createClient(
@@ -31,12 +24,11 @@ const supabase = createClient(
 );
 
 /**
- * Disable Next.js body parsing to access raw request body
- * Required for Stripe webhook signature verification
+ * Keep body parsing enabled for Razorpay webhooks
  */
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true,
   },
 };
 
@@ -48,96 +40,118 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const signature = req.headers['x-razorpay-signature'] as string;
 
-  if (!sig || !webhookSecret) {
+  if (!signature || !webhookSecret) {
     return res.status(400).json({ error: 'Missing signature or webhook secret' });
   }
 
-  let event: Stripe.Event;
+  // Verify webhook signature
+  const body = JSON.stringify(req.body);
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(body)
+    .digest('hex');
 
-  try {
-    const rawBody = await buffer(req);
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return res.status(400).json({ error: 'Webhook signature verification failed' });
+  if (expectedSignature !== signature) {
+    console.error('Webhook signature verification failed');
+    return res.status(400).json({ error: 'Invalid signature' });
   }
 
   try {
-    switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const bookingId = paymentIntent.metadata.bookingId;
+    const event = req.body;
+    const eventType = event.event;
 
-        if (bookingId) {
+    switch (eventType) {
+      case 'payment.captured': {
+        const payment = event.payload.payment.entity;
+        const orderId = payment.order_id;
+        const paymentId = payment.id;
+        const amount = payment.amount / 100; // Convert from paise to rupees
+
+        // Find booking by order ID
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('razorpay_order_id', orderId)
+          .single();
+
+        if (booking) {
           // Update booking payment status
           await supabase
             .from('bookings')
             .update({
               payment_status: 'paid',
-              payment_id: paymentIntent.id,
-              payment_amount: paymentIntent.amount / 100,
+              payment_id: paymentId,
+              payment_amount: amount,
               payment_date: new Date().toISOString(),
               status: 'confirmed',
             })
-            .eq('id', bookingId);
+            .eq('id', booking.id);
 
-          // Store payment record
-          await supabase.from('payments').insert({
-            booking_id: parseInt(bookingId),
-            payment_intent_id: paymentIntent.id,
-            amount: paymentIntent.amount / 100,
-            currency: paymentIntent.currency,
-            status: 'succeeded',
-            customer_email: paymentIntent.metadata.customerEmail,
-            customer_name: paymentIntent.metadata.customerName,
-            receipt_url: paymentIntent.charges?.data?.[0]?.receipt_url || null,
-          });
+          // Update payment record
+          await supabase
+            .from('payments')
+            .upsert({
+              booking_id: booking.id,
+              razorpay_order_id: orderId,
+              razorpay_payment_id: paymentId,
+              amount: amount,
+              currency: payment.currency,
+              status: 'captured',
+              customer_email: payment.email,
+              customer_phone: payment.contact,
+            });
 
-          console.log(`Payment succeeded for booking ${bookingId}`);
+          console.log(`Payment captured for booking ${booking.id}`);
         }
         break;
       }
 
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const bookingId = paymentIntent.metadata.bookingId;
+      case 'payment.failed': {
+        const payment = event.payload.payment.entity;
+        const orderId = payment.order_id;
 
-        if (bookingId) {
+        // Find booking by order ID
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('razorpay_order_id', orderId)
+          .single();
+
+        if (booking) {
           await supabase
             .from('bookings')
             .update({
               payment_status: 'failed',
             })
-            .eq('id', bookingId);
+            .eq('id', booking.id);
 
-          console.log(`Payment failed for booking ${bookingId}`);
+          console.log(`Payment failed for booking ${booking.id}`);
         }
         break;
       }
 
-      case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge;
-        const paymentIntentId = charge.payment_intent as string;
+      case 'refund.created': {
+        const refund = event.payload.refund.entity;
+        const paymentId = refund.payment_id;
+        const refundAmount = refund.amount / 100;
 
-        // Find booking by payment intent
+        // Find booking by payment ID
         const { data: booking } = await supabase
           .from('bookings')
           .select('id')
-          .eq('payment_intent_id', paymentIntentId)
+          .eq('payment_id', paymentId)
           .single();
 
         if (booking) {
-          const refundAmount = charge.amount_refunded / 100;
-          const isFullRefund = charge.refunded;
-
           await supabase
             .from('bookings')
             .update({
-              payment_status: isFullRefund ? 'refunded' : 'partially_refunded',
+              payment_status: 'refunded',
               refund_amount: refundAmount,
+              refund_id: refund.id,
               refund_date: new Date().toISOString(),
             })
             .eq('id', booking.id);
@@ -146,11 +160,12 @@ export default async function handler(
           await supabase
             .from('payments')
             .update({
-              status: isFullRefund ? 'refunded' : 'partially_refunded',
+              status: 'refunded',
               refund_amount: refundAmount,
+              refund_id: refund.id,
               refund_date: new Date().toISOString(),
             })
-            .eq('payment_intent_id', paymentIntentId);
+            .eq('razorpay_payment_id', paymentId);
 
           console.log(`Refund processed for booking ${booking.id}`);
         }
@@ -158,7 +173,7 @@ export default async function handler(
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`Unhandled event type: ${eventType}`);
     }
 
     res.status(200).json({ received: true });

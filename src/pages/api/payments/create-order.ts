@@ -1,28 +1,29 @@
 /**
- * Create Payment Intent API
+ * Create Razorpay Order API
  *
- * Creates a Stripe PaymentIntent for a booking payment.
+ * Creates a Razorpay order for a booking payment.
  * This endpoint is called when a user initiates payment for their booking.
  *
  * Flow:
  * 1. Validates required fields (bookingId, amount)
  * 2. Verifies booking exists and isn't already paid
- * 3. Creates Stripe PaymentIntent with booking metadata
- * 4. Updates booking with payment_intent_id
- * 5. Returns client_secret for Stripe Elements
+ * 3. Creates Razorpay order with booking metadata
+ * 4. Updates booking with order_id
+ * 5. Returns order details for Razorpay checkout
  *
  * @method POST
- * @body {bookingId: number, amount: number, customerEmail?: string, customerName?: string}
- * @returns {clientSecret: string, paymentIntentId: string}
+ * @body {bookingId: number, amount: number}
+ * @returns {orderId: string, amount: number, currency: string, keyId: string}
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-01-27.acacia',
+// Initialize Razorpay with API keys
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || '',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
 // Create Supabase client for database operations
@@ -40,7 +41,7 @@ export default async function handler(
   }
 
   try {
-    const { bookingId, amount, customerEmail, customerName, description } = req.body;
+    const { bookingId, amount } = req.body;
 
     if (!bookingId || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -62,39 +63,41 @@ export default async function handler(
       return res.status(400).json({ error: 'Booking already paid' });
     }
 
-    // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe uses smallest currency unit (paise)
-      currency: 'inr',
-      metadata: {
+    // Create Razorpay order
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100), // Razorpay uses paise (smallest currency unit)
+      currency: 'INR',
+      receipt: `booking_${bookingId}`,
+      notes: {
         bookingId: bookingId.toString(),
-        customerEmail: customerEmail || booking.email || '',
-        customerName: customerName || booking.name || '',
-      },
-      description: description || `AaoCab Booking #${bookingId}`,
-      receipt_email: customerEmail || booking.email,
-      automatic_payment_methods: {
-        enabled: true,
+        customerEmail: booking.email || '',
+        customerName: booking.name || '',
       },
     });
 
-    // Update booking with payment intent ID
+    // Update booking with order ID
     await supabase
       .from('bookings')
       .update({
-        payment_intent_id: paymentIntent.id,
+        razorpay_order_id: order.id,
         payment_status: 'pending',
       })
       .eq('id', bookingId);
 
     res.status(200).json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      bookingId: bookingId,
+      customerName: booking.name,
+      customerEmail: booking.email,
+      customerPhone: booking.phone,
     });
   } catch (error) {
-    console.error('Payment intent creation error:', error);
+    console.error('Razorpay order creation error:', error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to create payment intent'
+      error: error instanceof Error ? error.message : 'Failed to create order'
     });
   }
 }

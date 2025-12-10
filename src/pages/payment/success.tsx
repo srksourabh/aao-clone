@@ -34,7 +34,7 @@ interface Booking {
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
-  const { bookingId, payment_intent } = router.query;
+  const { bookingId, paymentId } = router.query;
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ AAOCAB - PAYMENT RECEIPT
 ========================
 
 Booking ID: #${booking?.id}
-Payment ID: ${payment_intent || booking?.payment_id || 'N/A'}
+Payment ID: ${paymentId || booking?.payment_id || 'N/A'}
 Date: ${new Date().toLocaleDateString('en-IN')}
 
 TRIP DETAILS

@@ -1,9 +1,14 @@
+/**
+ * Payment Page
+ *
+ * Handles payment flow using Razorpay checkout.
+ * Creates order and displays PaymentForm component.
+ */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import { PaymentForm } from '@/components/PaymentForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -22,8 +27,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
-
 interface Booking {
   id: number;
   from_location: string;
@@ -39,6 +42,16 @@ interface Booking {
   status: string;
 }
 
+interface OrderData {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
 export default function PaymentPage() {
   const router = useRouter();
   const { bookingId } = router.query;
@@ -46,18 +59,18 @@ export default function PaymentPage() {
   const { user, loading: authLoading } = useAuth();
 
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (bookingId) {
-      fetchBookingAndCreateIntent();
+      fetchBookingAndCreateOrder();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
-  const fetchBookingAndCreateIntent = async () => {
+  const fetchBookingAndCreateOrder = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -88,15 +101,13 @@ export default function PaymentPage() {
 
       setBooking(bookingData);
 
-      // Create payment intent
-      const response = await fetch('/api/payments/create-intent', {
+      // Create Razorpay order
+      const response = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: bookingData.id,
           amount: bookingData.total_amount,
-          customerEmail: bookingData.email,
-          customerName: bookingData.name,
         }),
       });
 
@@ -106,7 +117,15 @@ export default function PaymentPage() {
         throw new Error(data.error || 'Failed to initialize payment');
       }
 
-      setClientSecret(data.clientSecret);
+      setOrderData({
+        orderId: data.orderId,
+        amount: data.amount,
+        currency: data.currency,
+        keyId: data.keyId,
+        customerName: data.customerName || bookingData.name,
+        customerEmail: data.customerEmail || bookingData.email,
+        customerPhone: data.customerPhone || bookingData.phone,
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
       setError(errorMessage);
@@ -259,30 +278,18 @@ export default function PaymentPage() {
             </Card>
 
             {/* Payment Form */}
-            {clientSecret ? (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      colorPrimary: '#7c3aed',
-                      colorBackground: '#ffffff',
-                      colorText: '#1f2937',
-                      fontFamily: 'system-ui, sans-serif',
-                      borderRadius: '8px',
-                    },
-                  },
-                }}
-              >
-                <PaymentForm
-                  bookingId={booking.id}
-                  amount={booking.total_amount}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                />
-              </Elements>
+            {orderData ? (
+              <PaymentForm
+                bookingId={booking.id}
+                amount={orderData.amount}
+                orderId={orderData.orderId}
+                keyId={orderData.keyId}
+                customerName={orderData.customerName}
+                customerEmail={orderData.customerEmail}
+                customerPhone={orderData.customerPhone}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+              />
             ) : (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -294,7 +301,7 @@ export default function PaymentPage() {
 
             {/* Security Notice */}
             <p className="text-xs text-center text-gray-500">
-              Your payment is processed securely through Stripe. We never store your card details.
+              Your payment is processed securely through Razorpay. We never store your card details.
             </p>
           </div>
         </div>

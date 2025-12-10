@@ -1,9 +1,22 @@
+/**
+ * Razorpay Refund API
+ *
+ * Processes refunds for paid bookings (admin only).
+ * Supports full and partial refunds.
+ *
+ * @method POST
+ * @body {bookingId: number, amount?: number, reason?: string}
+ * @returns {success: boolean, refund: object}
+ */
+
 import type { NextApiRequest, NextApiResponse } from 'next';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-01-27.acacia',
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || '',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 });
 
 const supabase = createClient(
@@ -45,7 +58,7 @@ export default async function handler(
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    if (!booking.payment_intent_id) {
+    if (!booking.payment_id) {
       return res.status(400).json({ error: 'No payment found for this booking' });
     }
 
@@ -53,22 +66,31 @@ export default async function handler(
       return res.status(400).json({ error: 'Booking is not paid or already refunded' });
     }
 
-    // Create refund
-    const refundParams: Stripe.RefundCreateParams = {
-      payment_intent: booking.payment_intent_id,
-      reason: 'requested_by_customer',
-      metadata: {
+    // Create refund params
+    interface RefundParams {
+      amount?: number;
+      speed?: string;
+      notes?: {
+        bookingId: string;
+        reason: string;
+      };
+    }
+
+    const refundParams: RefundParams = {
+      speed: 'normal',
+      notes: {
         bookingId: bookingId.toString(),
         reason: reason || 'Customer requested',
       },
     };
 
-    // If partial refund amount specified
+    // If partial refund amount specified (in paise)
     if (amount && amount < booking.payment_amount) {
       refundParams.amount = Math.round(amount * 100);
     }
 
-    const refund = await stripe.refunds.create(refundParams);
+    // Create refund via Razorpay
+    const refund = await razorpay.payments.refund(booking.payment_id, refundParams);
 
     // Update booking status
     const refundAmount = refund.amount / 100;
@@ -79,6 +101,7 @@ export default async function handler(
       .update({
         payment_status: isFullRefund ? 'refunded' : 'partially_refunded',
         refund_amount: refundAmount,
+        refund_id: refund.id,
         refund_date: new Date().toISOString(),
         refund_reason: reason || 'Customer requested',
         status: 'cancelled',
