@@ -1,5 +1,5 @@
 // Pricing API - calculates quotes for all trip types
-// Last updated: Dec 25, 2025 - Round trip fix
+// Last updated: Dec 25, 2025 - Round trip fix with proper tripType handling
 import type { NextApiRequest, NextApiResponse } from "next";
 import { calculateCompetitivePrice } from "@/lib/pricingEngine";
 
@@ -7,6 +7,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") return res.status(405).end();
 
   const { from, to, carType, date, returnDate, time, tripType, babyOnBoard, petOnBoard, patientOnBoard, fromCoordinates, toCoordinates, rentalPackage } = req.body;
+
+  // Debug logging
+  console.log('[get-quote] Request:', { tripType, from, to, date, returnDate });
 
   try {
     let oneWayDistanceKm = 0;
@@ -78,6 +81,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       tripDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1); // Include both start and end day
     }
 
+    console.log('[get-quote] Processing tripType:', tripType, '| oneWayKm:', oneWayDistanceKm);
+
     switch (tripType) {
       case 'roundtrip':
         // Round Trip: Up + Down (same distance both ways)
@@ -97,6 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           tripDays: tripDays,
           minKmPerDay: minKmPerDay
         };
+        console.log('[get-quote] Round trip calculation:', { totalDistanceKm, tripDays, distanceBreakdown });
         break;
 
       case 'rental':
@@ -124,6 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       default:
         // One-Way: Single direction only
+        console.log('[get-quote] One-way calculation:', { totalDistanceKm });
         break;
     }
 

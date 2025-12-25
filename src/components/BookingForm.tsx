@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Sparkles, CheckCircle2, Phone, Calendar, Clock, MapPin, Car, Snowflake, Mountain, Landmark, X } from 'lucide-react';
 import LocationInput from './LocationInput';
@@ -64,13 +64,23 @@ interface BookingFormProps {
 }
 
 // Named Export
-export function BookingForm(_: BookingFormProps = {}) {
-  void _; // Props reserved for future use
+export function BookingForm(props: BookingFormProps = {}) {
+  const { isRoundTrip } = props;
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
   // --- TRIP TYPE STATE ---
-  const [tripType, setTripType] = useState<'oneway' | 'roundtrip' | 'rental' | 'package'>('oneway');
+  // Initialize based on isRoundTrip prop if provided
+  const [tripType, setTripType] = useState<'oneway' | 'roundtrip' | 'rental' | 'package'>(
+    isRoundTrip ? 'roundtrip' : 'oneway'
+  );
+
+  // Sync tripType when isRoundTrip prop changes
+  useEffect(() => {
+    if (isRoundTrip !== undefined) {
+      setTripType(isRoundTrip ? 'roundtrip' : 'oneway');
+    }
+  }, [isRoundTrip]);
 
   // --- MODAL STATE (For Pricing) ---
   const [showQuoteModal, setShowQuoteModal] = useState(false);
