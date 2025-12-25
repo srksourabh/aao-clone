@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { calculateCompetitivePrice } from "@/lib/pricingEngine";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { from, to, carType, date, time, tripType, babyOnBoard, petOnBoard, patientOnBoard, fromCoordinates, toCoordinates, rentalPackage } = req.body;
+  const { from, to, carType, date, returnDate, time, tripType, babyOnBoard, petOnBoard, patientOnBoard, fromCoordinates, toCoordinates, rentalPackage } = req.body;
 
   try {
     let oneWayDistanceKm = 0;
@@ -60,16 +61,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       isRoundTrip: false
     };
 
+    // Calculate number of days for round trips
+    let tripDays = 1;
+    if (tripType === 'roundtrip' && returnDate && date) {
+      const startDate = new Date(date);
+      const endDate = new Date(returnDate);
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      tripDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1); // Include both start and end day
+    }
+
     switch (tripType) {
       case 'roundtrip':
         // Round Trip: Up + Down (same distance both ways)
         totalDistanceKm = oneWayDistanceKm * 2;
         totalDurationMins = oneWayDurationMins * 2;
+        
+        // For multi-day trips, apply minimum km per day (250km/day is standard)
+        const minKmPerDay = 250;
+        const minTotalKm = minKmPerDay * tripDays;
+        totalDistanceKm = Math.max(totalDistanceKm, minTotalKm);
+        
         distanceBreakdown = {
           upKm: oneWayDistanceKm,
           downKm: oneWayDistanceKm,
           totalKm: totalDistanceKm,
-          isRoundTrip: true
+          isRoundTrip: true,
+          tripDays: tripDays,
+          minKmPerDay: minKmPerDay
         };
         break;
 
@@ -109,6 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       tripDate: date,
       tripTime: time,
       tripType,
+      tripDays: tripDays,
       hasPet: petOnBoard,
       hasChild: babyOnBoard,
       hasPatient: patientOnBoard

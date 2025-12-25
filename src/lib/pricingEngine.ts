@@ -7,6 +7,7 @@ interface PriceParams {
   tripDate: string;
   tripTime: string;
   tripType: string;
+  tripDays?: number;
   hasPet: boolean;
   hasChild: boolean;
   hasPatient: boolean;
@@ -82,7 +83,7 @@ const estimateCompetitorPrices = (distanceKm: number, carType: string, isNight: 
 };
 
 export const calculateCompetitivePrice = (params: PriceParams) => {
-  const { distanceKm, carType, tripTime, tripDate, tripType, hasPet, hasChild, hasPatient, weather } = params;
+  const { distanceKm, carType, tripTime, tripDate, tripType, tripDays = 1, hasPet, hasChild, hasPatient, weather } = params;
 
   // 1. Market Base Rates (Per KM) - Our competitive rates
   const marketRates: Record<string, number> = {
@@ -146,10 +147,17 @@ export const calculateCompetitivePrice = (params: PriceParams) => {
 
   const baseFare = Math.round(chargeableDistance * ratePerKm);
 
-  // DRIVER ALLOWANCE LOGIC: Only charge at night
-  // Day: 0, Night: 300 (or 500 for very long trips)
+  // DRIVER ALLOWANCE LOGIC
+  // For multi-day round trips: charge per day (₹300/day standard, ₹500/day for premium vehicles)
+  // For single day trips: only charge at night
   let driverAllowance = 0;
-  if (isNight) {
+  const dailyAllowanceRate = ['SUV', 'Innova', 'Tempo Traveller', 'Mini Bus'].includes(carType) ? 500 : 300;
+  
+  if (tripType === 'roundtrip' && tripDays > 1) {
+    // Multi-day round trip: charge for all days
+    driverAllowance = dailyAllowanceRate * tripDays;
+  } else if (isNight) {
+    // Single day night trip
     driverAllowance = distanceKm > 250 ? 500 : 300;
   }
 
@@ -183,6 +191,8 @@ export const calculateCompetitivePrice = (params: PriceParams) => {
     petCharge,
     weatherSurcharge,
     gst,
+    ...(tripDays > 1 && { tripDays: `${tripDays} days` }),
+    ...(tripDays > 1 && { driverAllowancePerDay: `₹${dailyAllowanceRate}/day` }),
     ...(isNight && { nightSurge: '15%' }),
     ...(isFestival && { festivalSurge: `20% (${festivalCheck.festivalName})` }),
     ...(weatherFactor && { weatherCondition: weatherFactor }),
@@ -199,6 +209,10 @@ export const calculateCompetitivePrice = (params: PriceParams) => {
     weatherSurcharge,
     gst,
     finalTotal,
+
+    // Trip details
+    tripDays,
+    dailyAllowanceRate: tripDays > 1 ? dailyAllowanceRate : undefined,
 
     // Competitive analysis
     competitorPrices,
