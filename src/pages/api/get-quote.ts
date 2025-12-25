@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { NextApiRequest, NextApiResponse } from "next";
 import { calculateCompetitivePrice } from "@/lib/pricingEngine";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -54,7 +53,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ---------------------------------------------------------
     let totalDistanceKm = oneWayDistanceKm;
     let totalDurationMins = oneWayDurationMins;
-    let distanceBreakdown = {
+    let distanceBreakdown: {
+      upKm: number;
+      downKm: number;
+      totalKm: number;
+      isRoundTrip: boolean;
+      tripDays?: number;
+      minKmPerDay?: number;
+    } = {
       upKm: oneWayDistanceKm,
       downKm: 0,
       totalKm: oneWayDistanceKm,

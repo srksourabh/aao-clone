@@ -35,8 +35,12 @@ interface CalculatedPrice {
     downKm: number;
     totalKm: number;
     isRoundTrip: boolean;
+    tripDays?: number;
+    minKmPerDay?: number;
   };
   tripType?: string;
+  tripDays?: number;
+  dailyAllowanceRate?: number;
 }
 
 const CAR_TYPES = ['Sedan', 'Sedan XL', 'SUV', 'Innova', 'Tempo Traveller', 'Mini Bus'];
@@ -634,29 +638,29 @@ export function BookingForm(_: BookingFormProps = {}) {
                     {calculatedPrice.distanceBreakdown?.isRoundTrip && (
                       <div style={{ backgroundColor: '#ede9fe', border: '1px solid #a78bfa', borderRadius: '6px', padding: '10px', marginBottom: '12px' }}>
                         <div style={{ fontWeight: '600', marginBottom: '6px', fontSize: '13px', color: '#5b21b6' }}>🔄 Round Trip Details:</div>
-                        {calculatedPrice.distanceBreakdown.tripDays > 1 && (
+                        {(calculatedPrice.distanceBreakdown?.tripDays ?? 1) > 1 && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px', backgroundColor: '#ddd6fe', padding: '4px 8px', borderRadius: '4px' }}>
                             <span>📅 Trip Duration</span>
-                            <span style={{ fontWeight: 'bold' }}>{calculatedPrice.distanceBreakdown.tripDays} Days</span>
+                            <span style={{ fontWeight: 'bold' }}>{calculatedPrice.distanceBreakdown?.tripDays} Days</span>
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                           <span>↗️ Up Journey</span>
-                          <span>{calculatedPrice.distanceBreakdown.upKm.toFixed(1)} km</span>
+                          <span>{calculatedPrice.distanceBreakdown?.upKm?.toFixed(1)} km</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                           <span>↙️ Return Journey</span>
-                          <span>{calculatedPrice.distanceBreakdown.downKm.toFixed(1)} km</span>
+                          <span>{calculatedPrice.distanceBreakdown?.downKm?.toFixed(1)} km</span>
                         </div>
-                        {calculatedPrice.distanceBreakdown.tripDays > 1 && (
+                        {(calculatedPrice.distanceBreakdown?.tripDays ?? 1) > 1 && calculatedPrice.distanceBreakdown?.minKmPerDay && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px', color: '#6b7280' }}>
                             <span>📏 Min. {calculatedPrice.distanceBreakdown.minKmPerDay} km/day</span>
-                            <span>= {calculatedPrice.distanceBreakdown.minKmPerDay * calculatedPrice.distanceBreakdown.tripDays} km min</span>
+                            <span>= {(calculatedPrice.distanceBreakdown.minKmPerDay ?? 0) * (calculatedPrice.distanceBreakdown.tripDays ?? 1)} km min</span>
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 'bold', borderTop: '1px dashed #a78bfa', paddingTop: '6px', marginTop: '6px' }}>
                           <span>📍 Total Chargeable Distance</span>
-                          <span>{calculatedPrice.distanceBreakdown.totalKm.toFixed(1)} km</span>
+                          <span>{calculatedPrice.distanceBreakdown?.totalKm?.toFixed(1)} km</span>
                         </div>
                       </div>
                     )}
@@ -669,7 +673,7 @@ export function BookingForm(_: BookingFormProps = {}) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                           <span>
                             Driver Allowance 
-                            {calculatedPrice.tripDays > 1 
+                            {(calculatedPrice.tripDays ?? 1) > 1 
                               ? ` (₹${calculatedPrice.dailyAllowanceRate}/day × ${calculatedPrice.tripDays} days)` 
                               : ' (Night)'}
                           </span>
