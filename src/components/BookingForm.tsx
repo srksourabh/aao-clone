@@ -30,6 +30,13 @@ interface CalculatedPrice {
   weatherSurcharge: number;
   gst: number;
   perks?: string[];
+  distanceBreakdown?: {
+    upKm: number;
+    downKm: number;
+    totalKm: number;
+    isRoundTrip: boolean;
+  };
+  tripType?: string;
 }
 
 const CAR_TYPES = ['Sedan', 'Sedan XL', 'SUV', 'Innova', 'Tempo Traveller', 'Mini Bus'];
@@ -189,11 +196,11 @@ export function BookingForm(_: BookingFormProps = {}) {
                 date: formData.trip_date,
                 time: formData.trip_time,
                 tripType: tripType,
+                rentalPackage: formData.rental_package,
                 babyOnBoard: formData.baby_on_board,
                 petOnBoard: formData.pet_on_board,
-                patientOnBoard: formData.patient_on_board,
-                // Can add weather detection here if you have a weather API
-                // weather: 'clear' // or dynamically fetch based on location
+                patientOnBoard: formData.patient_on_board
+                // Coordinates handled by API via text address geocoding
             })
         });
 
@@ -622,6 +629,26 @@ export function BookingForm(_: BookingFormProps = {}) {
                  {/* Price Breakup */}
                  <div style={{ backgroundColor: '#f9fafb', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '15px' }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>💵 Price Breakdown:</div>
+                    
+                    {/* Distance Breakdown for Round Trip */}
+                    {calculatedPrice.distanceBreakdown?.isRoundTrip && (
+                      <div style={{ backgroundColor: '#ede9fe', border: '1px solid #a78bfa', borderRadius: '6px', padding: '10px', marginBottom: '12px' }}>
+                        <div style={{ fontWeight: '600', marginBottom: '6px', fontSize: '13px', color: '#5b21b6' }}>🔄 Round Trip Distance:</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                          <span>↗️ Up Journey</span>
+                          <span>{calculatedPrice.distanceBreakdown.upKm.toFixed(1)} km</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                          <span>↙️ Return Journey</span>
+                          <span>{calculatedPrice.distanceBreakdown.downKm.toFixed(1)} km</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 'bold', borderTop: '1px dashed #a78bfa', paddingTop: '6px', marginTop: '6px' }}>
+                          <span>📍 Total Distance</span>
+                          <span>{calculatedPrice.distanceBreakdown.totalKm.toFixed(1)} km</span>
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                         <span>Base Fare ({calculatedPrice.distanceKm} km × ₹{calculatedPrice.ratePerKm}/km)</span>
                         <span>₹{calculatedPrice.baseFare}</span>

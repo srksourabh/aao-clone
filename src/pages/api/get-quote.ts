@@ -4,11 +4,11 @@ import { calculateCompetitivePrice } from "@/lib/pricingEngine";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { from, to, carType, date, time, tripType, babyOnBoard, petOnBoard, patientOnBoard, fromCoordinates, toCoordinates } = req.body;
+  const { from, to, carType, date, time, tripType, babyOnBoard, petOnBoard, patientOnBoard, fromCoordinates, toCoordinates, rentalPackage } = req.body;
 
   try {
-    let distanceKm = 0;
-    let durationMins = 0;
+    let oneWayDistanceKm = 0;
+    let oneWayDurationMins = 0;
 
     // ---------------------------------------------------------
     // INTELLIGENT DISTANCE CALCULATION
@@ -32,26 +32,79 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const googleData = await googleRes.json();
 
         if (googleData.status === "OK" && googleData.rows[0].elements[0].status === "OK") {
-            distanceKm = googleData.rows[0].elements[0].distance.value / 1000;
-            durationMins = Math.round(googleData.rows[0].elements[0].duration.value / 60);
+            oneWayDistanceKm = googleData.rows[0].elements[0].distance.value / 1000;
+            oneWayDurationMins = Math.round(googleData.rows[0].elements[0].duration.value / 60);
         }
     } 
     
     // ---------------------------------------------------------
     // FALLBACK (If Google API fails or keys invalid)
     // ---------------------------------------------------------
-    if (distanceKm === 0) {
+    if (oneWayDistanceKm === 0) {
         console.warn("Using fallback distance calculation");
         // Simple fallback based on string length matching common routes roughly
         // In production, this ensures the user ALWAYS gets a price, even if API is down
-        distanceKm = 45; 
-        durationMins = 90;
+        oneWayDistanceKm = 45; 
+        oneWayDurationMins = 90;
+    }
+
+    // ---------------------------------------------------------
+    // TRIP TYPE DISTANCE MULTIPLIER
+    // ---------------------------------------------------------
+    let totalDistanceKm = oneWayDistanceKm;
+    let totalDurationMins = oneWayDurationMins;
+    let distanceBreakdown = {
+      upKm: oneWayDistanceKm,
+      downKm: 0,
+      totalKm: oneWayDistanceKm,
+      isRoundTrip: false
+    };
+
+    switch (tripType) {
+      case 'roundtrip':
+        // Round Trip: Up + Down (same distance both ways)
+        totalDistanceKm = oneWayDistanceKm * 2;
+        totalDurationMins = oneWayDurationMins * 2;
+        distanceBreakdown = {
+          upKm: oneWayDistanceKm,
+          downKm: oneWayDistanceKm,
+          totalKm: totalDistanceKm,
+          isRoundTrip: true
+        };
+        break;
+
+      case 'rental':
+        // Rental: Use package-based minimum distance
+        // Parse package string like "8 Hrs / 80 km" to extract km
+        let packageMinKm = 80; // default
+        if (rentalPackage) {
+          const kmMatch = rentalPackage.match(/(\d+)\s*km/i);
+          if (kmMatch) {
+            packageMinKm = parseInt(kmMatch[1], 10);
+          }
+        }
+        totalDistanceKm = Math.max(oneWayDistanceKm, packageMinKm);
+        distanceBreakdown = {
+          upKm: totalDistanceKm,
+          downKm: 0,
+          totalKm: totalDistanceKm,
+          isRoundTrip: false
+        };
+        break;
+
+      case 'package':
+        // Package tours: Keep as-is (package-specific logic can be added)
+        break;
+
+      default:
+        // One-Way: Single direction only
+        break;
     }
 
     // 3. Run the Intelligent Pricing Agent
     const quote = calculateCompetitivePrice({
-      distanceKm,
-      durationMins,
+      distanceKm: totalDistanceKm,
+      durationMins: totalDurationMins,
       carType,
       tripDate: date,
       tripTime: time,
@@ -61,7 +114,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       hasPatient: patientOnBoard
     });
 
-    res.status(200).json({ success: true, quote });
+    // Add distance breakdown to quote for transparency
+    res.status(200).json({ 
+      success: true, 
+      quote: {
+        ...quote,
+        distanceBreakdown,
+        tripType
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: "Calculation failed" });
