@@ -107,7 +107,7 @@ export interface PricingInsight {
   trip_type?: string;
   title: string;
   description: string;
-  supporting_data?: any;
+  supporting_data?: Record<string, unknown>;
   potential_impact: string;
   estimated_revenue_impact?: number;
   confidence_score: number;
@@ -139,6 +139,7 @@ export interface CustomerSegment {
   promo_usage_rate: number;
   pricing_strategy?: string;
   custom_discount_percent?: number;
+  discount_trigger_percent?: number;
 }
 
 export interface DashboardSummary {
