@@ -84,6 +84,20 @@ export default async function handler(
             })
             .eq('id', bookingId);
 
+          // Get receipt URL from the latest charge if available
+          let receiptUrl: string | null = null;
+          if (paymentIntent.latest_charge) {
+            try {
+              const chargeId = typeof paymentIntent.latest_charge === 'string' 
+                ? paymentIntent.latest_charge 
+                : paymentIntent.latest_charge.id;
+              const charge = await stripe.charges.retrieve(chargeId);
+              receiptUrl = charge.receipt_url || null;
+            } catch (chargeError) {
+              console.error('Failed to retrieve charge for receipt URL:', chargeError);
+            }
+          }
+
           // Store payment record
           await supabase.from('payments').insert({
             booking_id: parseInt(bookingId),
@@ -93,7 +107,7 @@ export default async function handler(
             status: 'succeeded',
             customer_email: paymentIntent.metadata.customerEmail,
             customer_name: paymentIntent.metadata.customerName,
-            receipt_url: paymentIntent.charges?.data?.[0]?.receipt_url || null,
+            receipt_url: receiptUrl,
           });
 
           console.log(`Payment succeeded for booking ${bookingId}`);
