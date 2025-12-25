@@ -548,7 +548,7 @@ export class PricingIntelligenceService {
     return data || [];
   }
 
-  async triggerAutoAdjustment(): Promise<any[]> {
+  async triggerAutoAdjustment(): Promise<PricingAdjustmentLog[]> {
     const { data, error } = await this.supabase
       .rpc('auto_adjust_prices');
     

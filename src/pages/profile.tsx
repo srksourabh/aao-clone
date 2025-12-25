@@ -111,7 +111,6 @@ function ProfileContent() {
       setPasswordError(error);
     } else {
       setPasswordSuccess(true);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       toast({
