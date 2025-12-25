@@ -201,6 +201,7 @@ export default function HomePage() {
                 <BookingForm 
                   title="Book Your One-Way Trip"
                   subtitle="Enter your journey details below"
+                  tripType="oneway"
                   onTabChange={handleTabChangeWithData}
                   initialData={parsedData}
                 />
@@ -210,18 +211,26 @@ export default function HomePage() {
                 <BookingForm 
                   title="Book Your Round Trip"
                   subtitle="Same location for departure and return"
-                  isRoundTrip={true}
+                  tripType="roundtrip"
                   onTabChange={handleTabChangeWithData}
                   initialData={parsedData}
                 />
               )}
 
               {activeTab === "rental" && (
-                <BookingForm />
+                <BookingForm 
+                  title="Book Your Rental"
+                  subtitle="Hourly packages for local travel"
+                  tripType="rental"
+                />
               )}
 
               {activeTab === "package" && (
-                <BookingForm />
+                <BookingForm 
+                  title="Seasonal Packages"
+                  subtitle="Custom tour packages"
+                  tripType="package"
+                />
               )}
             </div>
           </div>

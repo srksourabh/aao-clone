@@ -61,26 +61,29 @@ interface BookingFormProps {
   onTabChange?: (newTab: string, data: ParsedBookingData) => void;
   initialData?: ParsedBookingData;
   isRoundTrip?: boolean;
+  tripType?: 'oneway' | 'roundtrip' | 'rental' | 'package';
 }
 
 // Named Export
 export function BookingForm(props: BookingFormProps = {}) {
-  const { isRoundTrip } = props;
+  const { isRoundTrip, tripType: propTripType } = props;
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
   // --- TRIP TYPE STATE ---
-  // Initialize based on isRoundTrip prop if provided
+  // Initialize based on tripType prop, isRoundTrip prop, or default to 'oneway'
   const [tripType, setTripType] = useState<'oneway' | 'roundtrip' | 'rental' | 'package'>(
-    isRoundTrip ? 'roundtrip' : 'oneway'
+    propTripType || (isRoundTrip ? 'roundtrip' : 'oneway')
   );
 
-  // Sync tripType when isRoundTrip prop changes
+  // Sync tripType when props change
   useEffect(() => {
-    if (isRoundTrip !== undefined) {
+    if (propTripType) {
+      setTripType(propTripType);
+    } else if (isRoundTrip !== undefined) {
       setTripType(isRoundTrip ? 'roundtrip' : 'oneway');
     }
-  }, [isRoundTrip]);
+  }, [propTripType, isRoundTrip]);
 
   // --- MODAL STATE (For Pricing) ---
   const [showQuoteModal, setShowQuoteModal] = useState(false);
