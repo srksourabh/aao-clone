@@ -1,3 +1,5 @@
+// Pricing API - calculates quotes for all trip types
+// Last updated: Dec 25, 2025 - Round trip fix
 import type { NextApiRequest, NextApiResponse } from "next";
 import { calculateCompetitivePrice } from "@/lib/pricingEngine";
 
